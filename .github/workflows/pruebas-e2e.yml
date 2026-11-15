@@ -1,0 +1,37 @@
+name: Pruebas de interfaz (E2E)
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  e2e:
+    name: Flujos de usuario con Playwright
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar frontend
+        uses: actions/checkout@v5
+      - name: Descargar backend
+        uses: actions/checkout@v5
+        with:
+          repository: juangallardo88/Caf-exportaci-n-backend
+          path: backend
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Instalar dependencias
+        run: |
+          pip install -r backend/requirements.txt -r requirements-dev.txt
+          python -m playwright install --with-deps chromium
+      - name: Ejecutar pruebas E2E
+        env:
+          BACKEND_DIR: backend
+        run: python -m pytest tests/e2e -v --junitxml=reporte-e2e.xml
+      - name: Guardar capturas y reporte
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: evidencias-e2e
+          path: |
+            tests/e2e/capturas/
+            reporte-e2e.xml
