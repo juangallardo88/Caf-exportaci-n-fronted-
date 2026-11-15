@@ -1,5 +1,5 @@
 // HU-01: inicio de sesión.
-import { api } from "../api.js";
+import { api, despertarServidor } from "../api.js";
 import { icono } from "../iconos.js";
 import { guardarSesion } from "../sesion.js";
 import { h } from "../ui.js";
@@ -15,6 +15,20 @@ export function vistaLogin() {
   const clave = h("input", { id: "contrasena", type: "password", required: true, autocomplete: "current-password" });
   const error = h("div", { class: "alerta-caja error oculto", role: "alert" });
   const entrar = h("button", { class: "boton boton-acento", type: "submit", style: "width:100%;padding:12px" }, "Iniciar sesión");
+  const servidor = h("div", { class: "estado-servidor", role: "status", "aria-live": "polite" });
+  const espera = h("p", { class: "login-espera oculto" });
+  let servidorListo = false;
+
+  const pintarServidor = (estado, texto) => {
+    servidor.className = `estado-servidor ${estado}`;
+    servidor.replaceChildren(h("span", { class: "punto", "aria-hidden": "true" }), texto);
+  };
+  // Solo se muestra "Conectando…" si la respuesta tarda; si el servidor ya estaba activo, aparece directamente "listo".
+  const aviso = setTimeout(() => pintarServidor("conectando", "Conectando con el servidor…"), 700);
+  despertarServidor()
+    .then(() => { servidorListo = true; pintarServidor("listo", "Servidor listo"); })
+    .catch(() => pintarServidor("error", "No hay conexión con el servidor. Revisa tu internet e intenta de nuevo."))
+    .finally(() => clearTimeout(aviso));
 
   const form = h("form", { class: "login-caja", novalidate: true },
     h("div", {}, h("h2", {}, "Bienvenido"), h("p", { class: "secundario", style: "margin:6px 0 0" }, "Ingresa con tu cuenta corporativa")),
@@ -22,6 +36,8 @@ export function vistaLogin() {
     h("div", { class: "campo" }, h("label", { for: "correo" }, "Correo"), correo),
     h("div", { class: "campo" }, h("label", { for: "contrasena" }, "Contraseña"), clave),
     entrar,
+    espera,
+    servidor,
     h("div", { class: "demo" }, h("strong", {}, "Usuarios de demostración: "),
       DEMO.map(([c, p, rol], i) => [i ? " · " : "", h("button", { type: "button", onclick: () => { correo.value = c; clave.value = p; } }, rol)])));
 
@@ -35,11 +51,19 @@ export function vistaLogin() {
     }
     entrar.disabled = true;
     entrar.replaceChildren(h("span", { class: "spinner" }), "Ingresando…");
+    const lento = setTimeout(() => {
+      espera.textContent = servidorListo
+        ? "Está tardando más de lo normal. Espera un momento…"
+        : "El servidor estaba en pausa y se está activando. La primera vez del día puede tardar hasta un minuto.";
+      espera.classList.remove("oculto");
+    }, 4000);
     try {
       const sesion = await api.post("/auth/login", { correo: correo.value.trim(), contrasena: clave.value });
       guardarSesion(sesion);
       location.hash = "#/dashboard";
     } catch (err) {
+      clearTimeout(lento);
+      espera.classList.add("oculto");
       error.replaceChildren(icono("alerta"), h("div", {}, err.message));
       error.classList.remove("oculto");
       entrar.disabled = false;

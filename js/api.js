@@ -60,3 +60,15 @@ export const api = {
   delete: (ruta) => peticion("DELETE", ruta),
   archivo: (ruta, params) => peticion("GET", ruta + consulta(params), undefined, { comoArchivo: true }),
 };
+
+// Render apaga el plan gratuito cuando no se usa: despertarlo apenas se abre la app
+// evita que el primer inicio de sesión del día parezca bloqueado.
+let despertando = null;
+export function despertarServidor() {
+  if (!despertando) {
+    despertando = fetch(base() + "/salud", { cache: "no-store" })
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)); return true; })
+      .catch((e) => { despertando = null; throw e; });
+  }
+  return despertando;
+}

@@ -19,16 +19,24 @@ const tarjeta = (titulo, ...contenido) =>
   h("div", { class: "tarjeta" }, h("div", { class: "tarjeta-titulo" }, h("h2", {}, titulo)), h("div", { class: "tarjeta-cuerpo" }, contenido));
 
 function pasos(estado) {
+  const cancelada = estado === "CANCELADA";
+  const final = estado === "ENTREGADA";
   const indice = FLUJO.indexOf(estado);
-  return h("div", { class: "pasos", "aria-label": "Progreso de la exportación" }, FLUJO.map((paso, i) => {
+  const lista = h("ol", { class: `pasos${cancelada ? " pasos-cancelados" : ""}`, "aria-label": "Progreso de la exportación" }, FLUJO.map((paso, i) => {
     let clase = "";
-    if (estado === "CANCELADA") clase = i === 0 ? "cancelado" : "";
-    else if (i < indice) clase = "hecho";
-    else if (i === indice) clase = "actual";
-    return h("div", { class: `paso ${clase}` },
-      h("div", { class: "paso-punto" }, clase === "hecho" ? icono("check") : estado === "CANCELADA" && i === 0 ? "×" : i + 1),
-      ESTADOS_EXPORTACION[paso][0]);
+    if (!cancelada) {
+      if (i < indice || (final && i === indice)) clase = "hecho";
+      else if (i === indice) clase = "actual";
+    }
+    return h("li", { class: `paso ${clase}`, "aria-current": clase === "actual" ? "step" : null },
+      h("div", { class: "paso-punto", "aria-hidden": "true" }, clase === "hecho" ? icono("check") : i + 1),
+      h("span", { class: "paso-texto" }, ESTADOS_EXPORTACION[paso][0]));
   }));
+  if (!cancelada) return lista;
+  return h("div", { class: "pasos-caja" },
+    h("div", { class: "aviso-cancelada", role: "status" }, icono("alerta"),
+      h("div", {}, h("strong", {}, "Exportación cancelada. "), "No continuará el flujo de envío y no admite más cambios.")),
+    lista);
 }
 
 export async function vistaExportacion({ id, recargar }) {

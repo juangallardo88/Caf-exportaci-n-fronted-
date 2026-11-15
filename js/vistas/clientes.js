@@ -42,7 +42,7 @@ export async function vistaClientes() {
     vacio: "No hay clientes con esos filtros",
     columnas: (recargar) => [
       { titulo: "Tax ID", render: (c) => h("span", { class: "mono" }, c.tax_id) },
-      { titulo: "Razón social", render: (c) => h("div", { class: "fuerte" }, c.razon_social) },
+      { titulo: "Razón social", principal: true, render: (c) => h("div", { class: "fuerte" }, c.razon_social) },
       { titulo: "Ubicación", render: (c) => h("div", {}, h("div", {}, `${c.ciudad}, ${c.pais}`), h("div", { class: "secundario" }, c.direccion_entrega)) },
       { titulo: "Contacto de compras", render: (c) => h("div", {}, h("div", {}, c.contacto_compras), h("div", { class: "secundario" }, c.correo || "")) },
       ...(editar ? [{ titulo: "", clase: "num", render: (c) => h("div", { class: "acciones" },

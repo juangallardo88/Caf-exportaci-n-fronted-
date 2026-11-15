@@ -56,7 +56,7 @@ export async function vistaInventario() {
         const movimientos = await api.get("/inventario/movimientos", { limite: 100 });
         zona.replaceChildren(h("div", { class: "tarjeta" }, tabla([
           { titulo: "Fecha", render: (m) => h("span", { class: "secundario" }, m.fecha.slice(0, 16)) },
-          { titulo: "Producto", render: (m) => h("div", {}, h("div", { class: "fuerte" }, m.producto), h("div", { class: "secundario mono" }, m.sku)) },
+          { titulo: "Producto", principal: true, render: (m) => h("div", {}, h("div", { class: "fuerte" }, m.producto), h("div", { class: "secundario mono" }, m.sku)) },
           { titulo: "Tipo", render: (m) => insignia(...TIPOS[m.tipo]) },
           { titulo: "Cantidad", clase: "num", render: (m) => (m.tipo === "SALIDA" ? "−" : m.cantidad > 0 && m.tipo === "AJUSTE" ? "+" : "") + numero(Math.abs(m.cantidad)) },
           { titulo: "Motivo", campo: "motivo" },

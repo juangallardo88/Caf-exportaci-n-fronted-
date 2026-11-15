@@ -200,3 +200,74 @@ def test_cerrar_sesion(pagina):  # HU-02
     expect(pagina.locator("#correo")).to_be_visible()
     pagina.goto(pagina.url.split("#")[0] + "#/dashboard")
     expect(pagina.locator("#correo")).to_be_visible()
+
+
+# ---------- Paquete 1 de mejoras: progreso, servidor dormido y tablas en celular ----------
+
+RETRASAR_FETCH = """
+  const original = window.fetch.bind(window);
+  window.fetch = (url, opciones) => {
+    const ruta = String(url);
+    const espera = ruta.includes('/salud') ? %d : ruta.includes('/auth/login') ? %d : 0;
+    return new Promise((listo) => setTimeout(listo, espera)).then(() => original(url, opciones));
+  };
+"""
+
+
+def ir(pagina, ruta):
+    pagina.goto(pagina.url.split("#")[0] + "#" + ruta)
+
+
+def test_exportacion_entregada_muestra_todos_los_pasos_completados(pagina):  # HU-23
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/exportaciones/1")
+    expect(pagina.locator("h1")).to_have_text("EXP-2026-0001")
+    expect(pagina.locator(".paso.hecho")).to_have_count(4)
+    expect(pagina.locator(".paso.actual")).to_have_count(0)
+
+
+def test_exportacion_cancelada_muestra_aviso_y_ningun_paso_activo(pagina):  # HU-23
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/exportaciones/5")
+    expect(pagina.locator("h1")).to_have_text("EXP-2026-0005")
+    expect(pagina.get_by_role("status").filter(has_text="Exportación cancelada")).to_be_visible()
+    expect(pagina.locator(".pasos-cancelados .paso")).to_have_count(4)
+    expect(pagina.locator(".paso.hecho, .paso.actual")).to_have_count(0)
+
+
+def test_login_indica_que_el_servidor_esta_listo(pagina):  # HU-01
+    expect(pagina.locator(".estado-servidor")).to_have_text("Servidor listo")
+
+
+def test_login_explica_la_espera_cuando_el_servidor_esta_dormido(pagina):  # HU-01
+    pagina.context.add_init_script(RETRASAR_FETCH % (8000, 8000))
+    pagina.reload()
+    expect(pagina.locator(".estado-servidor")).to_have_text("Conectando con el servidor…")
+    pagina.fill("#correo", ADMIN[0])
+    pagina.fill("#contrasena", ADMIN[1])
+    pagina.click("button[type=submit]")
+    expect(pagina.locator(".login-espera")).to_contain_text("El servidor estaba en pausa", timeout=6000)
+    expect(pagina.locator(".kpi-valor").first).to_be_visible(timeout=20000)
+
+
+def test_tablas_se_ven_como_tarjetas_en_celular(nueva_pagina):  # HU-17 + diseño responsive
+    pagina = nueva_pagina(390, 844)
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/exportaciones")
+    tarjeta = pagina.locator(".tabla-contenedor tbody tr").first
+    expect(tarjeta).to_be_visible()
+    ancho_pagina = pagina.evaluate("document.documentElement.scrollWidth")
+    assert ancho_pagina <= 390, f"La página se desborda: {ancho_pagina}px"
+    # El estado y el total quedan dentro de la pantalla, con su etiqueta.
+    for etiqueta in ("Estado", "Total"):
+        celda = tarjeta.locator(f'td[data-etiqueta="{etiqueta}"]')
+        expect(celda).to_be_in_viewport()
+    expect(pagina.locator(".tabla-contenedor thead")).not_to_be_in_viewport()
+    capturar(pagina, "09-tarjetas-movil")
+
+
+def test_tablas_siguen_como_tabla_en_escritorio(pagina):
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/productos")
+    expect(pagina.locator(".tabla-contenedor thead")).to_be_visible()
+    assert pagina.locator(".tabla-contenedor tbody tr").first.evaluate("e => getComputedStyle(e).display") == "table-row"

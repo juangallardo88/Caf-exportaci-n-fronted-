@@ -59,7 +59,7 @@ export async function vistaProductos() {
     vacio: "No hay productos con esos filtros",
     columnas: (recargar) => [
       { titulo: "SKU", render: (p) => h("span", { class: "mono" }, p.sku) },
-      { titulo: "Producto", render: (p) => h("div", {}, h("div", { class: "fuerte" }, p.nombre), h("div", { class: "secundario" }, p.descripcion || "")) },
+      { titulo: "Producto", principal: true, render: (p) => h("div", {}, h("div", { class: "fuerte" }, p.nombre), h("div", { class: "secundario" }, p.descripcion || "")) },
       { titulo: "Categoría", render: (p) => (p.categoria === "CAFE" ? "Café" : "Cacao") },
       { titulo: "Precio", clase: "num", render: (p) => moneda(p.precio) },
       { titulo: "Stock", clase: "num", render: (p) => numero(p.stock) },

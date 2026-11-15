@@ -98,9 +98,12 @@ export function confirmar(mensaje, { titulo = "Confirmar", textoBoton = "Confirm
 // ---------- Tabla ----------
 /** columnas: [{ titulo, campo | render(fila), clase }] */
 export function tabla(columnas, filas, { alClic, vacio = "No hay registros todavía" } = {}) {
+  // En celular cada fila se muestra como tarjeta; la columna "principal" (por defecto la primera) es su título.
+  const principal = Math.max(0, columnas.findIndex((c) => c.principal));
   const cuerpo = filas.length
     ? filas.map((fila) => h("tr", { class: alClic ? "clic" : "", onclick: alClic ? (e) => !e.target.closest("button") && alClic(fila) : null },
-        columnas.map((c) => h("td", { class: c.clase || "" }, c.render ? c.render(fila) : fila[c.campo] ?? "—"))))
+        columnas.map((c, i) => h("td", { class: [c.clase, c.titulo ? "" : "td-acciones", i === principal ? "td-principal" : ""].filter(Boolean).join(" "), dataset: { etiqueta: c.titulo || "" } },
+          c.render ? c.render(fila) : fila[c.campo] ?? "—"))))
     : [h("tr", {}, h("td", { colspan: columnas.length }, h("div", { class: "vacio" }, icono("caja"), h("div", {}, vacio))))];
   return h("div", { class: "tabla-contenedor" },
     h("table", {}, h("thead", {}, h("tr", {}, columnas.map((c) => h("th", { class: c.clase || "" }, c.titulo)))), h("tbody", {}, cuerpo)));

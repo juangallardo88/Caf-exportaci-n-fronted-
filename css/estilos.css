@@ -205,8 +205,8 @@ tr.clic { cursor: pointer; }
 .totales div { display: flex; justify-content: space-between; }
 .totales .total { border-top: 1px solid var(--borde); padding-top: 12px; font-family: var(--fuente-titulo); font-size: 22px; font-weight: 700; }
 
-.pasos { display: flex; gap: 0; margin: 4px 0 24px; overflow-x: auto; }
-.paso { flex: 1; min-width: 120px; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; color: var(--texto-2); font-size: 13px; font-weight: 500; }
+.pasos { display: flex; gap: 0; margin: 4px 0 24px; padding: 0; list-style: none; }
+.paso { flex: 1; min-width: 0; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; color: var(--texto-2); font-size: 13px; font-weight: 500; }
 .paso::before { content: ""; position: absolute; top: 14px; left: -50%; width: 100%; height: 2px; background: var(--borde); z-index: 0; }
 .paso:first-child::before { display: none; }
 .paso-punto { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--crema-2); border: 2px solid var(--borde); z-index: 1; font-weight: 700; font-size: 13px; }
@@ -214,7 +214,6 @@ tr.clic { cursor: pointer; }
 .paso.hecho .paso-punto { background: var(--cobre); border-color: var(--cobre); color: #fff; }
 .paso.hecho::before { background: var(--cobre); }
 .paso.actual .paso-punto { background: var(--espresso); border-color: var(--espresso); color: var(--cobre-claro); box-shadow: 0 0 0 5px var(--cobre-fondo); }
-.paso.cancelado .paso-punto { background: var(--error); border-color: var(--error); color: #fff; }
 
 .pestanas { display: flex; gap: 4px; padding: 4px; background: var(--crema-2); border-radius: 12px; width: fit-content; margin-bottom: 20px; }
 .pestanas button { border: none; background: transparent; padding: 8px 16px; border-radius: 9px; font-weight: 600; color: var(--texto-2); cursor: pointer; }
@@ -309,4 +308,46 @@ tr.clic { cursor: pointer; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---------- Paquete 1: progreso, servidor y tablas en celular ---------- */
+.paso-texto { line-height: 1.25; }
+.pasos-caja { display: flex; flex-direction: column; gap: 16px; margin: 4px 0 24px; }
+.pasos-caja .pasos { margin: 0; }
+.pasos-cancelados .paso { color: var(--gris); }
+.pasos-cancelados .paso-punto { background: var(--gris-fondo); border-color: var(--gris-fondo); color: var(--gris); }
+.pasos-cancelados .paso-texto { text-decoration: line-through; text-decoration-color: rgba(107,107,107,.5); }
+.aviso-cancelada { display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px; border-radius: 12px; background: var(--error-fondo); color: var(--error); font-size: 14px; }
+.aviso-cancelada svg { flex: none; width: 18px; height: 18px; margin-top: 2px; }
+
+.estado-servidor { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--texto-2); min-height: 20px; }
+.estado-servidor .punto { width: 8px; height: 8px; border-radius: 50%; background: var(--alerta); flex: none; }
+.estado-servidor.conectando .punto { animation: latido 1.2s ease-in-out infinite; }
+.estado-servidor.listo .punto { background: var(--ok); }
+.estado-servidor.error .punto { background: var(--error); }
+@keyframes latido { 50% { opacity: .3; } }
+.login-espera { font-size: 13px; color: var(--texto-2); text-align: center; margin-top: -8px; }
+
+@media (max-width: 640px) {
+  .pasos { gap: 0; }
+  .paso { font-size: 12px; gap: 6px; }
+  .paso-punto { width: 26px; height: 26px; font-size: 12px; }
+  .paso::before { top: 12px; }
+
+  .tabla-contenedor table, .tabla-contenedor tbody { display: block; }
+  .tabla-contenedor thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .tabla-contenedor tbody { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+  .tabla-contenedor tbody tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; padding: 14px 16px; border: 1px solid var(--borde); border-radius: 12px; background: var(--blanco); }
+  .tabla-contenedor tbody tr:hover { background: var(--blanco); }
+  .tabla-contenedor td { display: flex; flex-direction: column; gap: 2px; padding: 0; border: 0; min-width: 0; text-align: left; overflow-wrap: anywhere; }
+  .tabla-contenedor td::before { content: attr(data-etiqueta); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-2); }
+  .tabla-contenedor td.td-principal { grid-column: 1 / -1; order: -1; font-size: 16px; }
+  .tabla-contenedor td.td-principal::before { content: none; }
+  .tabla-contenedor td.td-principal .mono { font-size: 15px; }
+  .tabla-contenedor td.num { text-align: left; }
+  .tabla-contenedor td { align-items: flex-start; }
+  .tabla-contenedor td.td-acciones { grid-column: 1 / -1; flex-direction: row; justify-content: flex-end; gap: 4px; padding-top: 8px; border-top: 1px solid var(--borde); }
+  .tabla-contenedor td.td-acciones::before { content: none; }
+  .tabla-contenedor td[colspan] { grid-column: 1 / -1; }
+  .tabla-contenedor tr.cargando { display: block; }
 }
