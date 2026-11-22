@@ -8,18 +8,18 @@ import { crearListado } from "./comun.js";
 const CATEGORIAS = [["CAFE", "Café"], ["CACAO", "Cacao"]];
 
 const camposProducto = (nuevo) => [
-  { nombre: "sku", etiqueta: "SKU", requerido: true, patron: "[A-Za-z0-9\\-]{3,40}", mensaje: "3 a 40 letras, números o guiones", placeholder: "CAF-SUP-70" },
-  { nombre: "nombre", etiqueta: "Nombre", requerido: true, max: 120 },
+  { seccion: "Identificación", nombre: "sku", etiqueta: "SKU", requerido: true, patron: "[A-Za-z0-9\\-]{3,40}", mensaje: "3 a 40 letras, números o guiones", placeholder: "Ej.: CAF-NAR-70", ayuda: "Código único del producto" },
+  { nombre: "nombre", etiqueta: "Nombre", requerido: true, max: 120, placeholder: "Ej.: Café Especial Nariño" },
   { nombre: "categoria", etiqueta: "Categoría", tipo: "select", requerido: true, opciones: CATEGORIAS },
-  { nombre: "precio", etiqueta: "Precio unitario (USD)", tipo: "number", requerido: true, min: 0, paso: "0.01" },
-  { nombre: "peso_kg", etiqueta: "Peso (kg)", tipo: "number", requerido: true, min: 0.01, paso: "0.01" },
-  { nombre: "volumen_m3", etiqueta: "Volumen (m³)", tipo: "number", requerido: true, min: 0.001, paso: "0.001" },
+  { nombre: "precio", etiqueta: "Precio unitario", tipo: "number", requerido: true, min: 0, paso: "0.01", sufijo: "USD", sufijoLargo: "dólares" },
+  { seccion: "Empaque y transporte", nombre: "peso_kg", etiqueta: "Peso por unidad", tipo: "number", requerido: true, min: 0.01, paso: "0.01", sufijo: "kg", sufijoLargo: "kilogramos" },
+  { nombre: "volumen_m3", etiqueta: "Volumen por unidad", tipo: "number", requerido: true, min: 0.001, paso: "0.001", sufijo: "m³", sufijoLargo: "metros cúbicos" },
   ...(nuevo ? [
-    { nombre: "stock_inicial", etiqueta: "Stock inicial", tipo: "number", requerido: true, min: 0, paso: "1" },
-    { nombre: "stock_minimo", etiqueta: "Stock mínimo", tipo: "number", requerido: true, min: 0, paso: "1", ayuda: "Por debajo de este valor se alerta stock bajo" },
+    { seccion: "Inventario inicial", nombre: "stock_inicial", etiqueta: "Stock inicial", tipo: "number", requerido: true, min: 0, paso: "1", sufijo: "uds.", sufijoLargo: "unidades" },
+    { nombre: "stock_minimo", etiqueta: "Stock mínimo", tipo: "number", requerido: true, min: 0, paso: "1", sufijo: "uds.", sufijoLargo: "unidades", ayuda: "Por debajo de este valor se alerta stock bajo" },
     { nombre: "ubicacion", etiqueta: "Ubicación", requerido: true, completo: true, max: 80 },
   ] : []),
-  { nombre: "descripcion", etiqueta: "Descripción", tipo: "textarea", completo: true, max: 500 },
+  { seccion: "Detalle", nombre: "descripcion", etiqueta: "Descripción", tipo: "textarea", completo: true, max: 500, placeholder: "Ej.: café verde arábica, saco de 70 kg" },
 ];
 
 function abrirFormulario(producto, recargar) {
@@ -59,11 +59,11 @@ export async function vistaProductos() {
     cargar: (f) => api.get("/productos", f),
     vacio: "No hay productos con esos filtros",
     columnas: (recargar) => [
-      { titulo: "SKU", ayuda: TERMINOS.sku, render: (p) => h("span", { class: "mono" }, p.sku) },
-      { titulo: "Producto", principal: true, render: (p) => h("div", {}, h("div", { class: "fuerte" }, p.nombre), h("div", { class: "secundario" }, p.descripcion || "")) },
-      { titulo: "Categoría", render: (p) => (p.categoria === "CAFE" ? "Café" : "Cacao") },
-      { titulo: "Precio", clase: "num", render: (p) => moneda(p.precio) },
-      { titulo: "Stock", clase: "num", render: (p) => numero(p.stock) },
+      { titulo: "SKU", ayuda: TERMINOS.sku, ordenar: "sku", render: (p) => h("span", { class: "mono" }, p.sku) },
+      { titulo: "Producto", principal: true, ordenar: "nombre", render: (p) => h("div", {}, h("div", { class: "fuerte" }, p.nombre), h("div", { class: "secundario" }, p.descripcion || "")) },
+      { titulo: "Categoría", ordenar: "categoria", render: (p) => (p.categoria === "CAFE" ? "Café" : "Cacao") },
+      { titulo: "Precio", clase: "num", ordenar: (p) => Number(p.precio), render: (p) => moneda(p.precio) },
+      { titulo: "Stock", clase: "num", ordenar: (p) => Number(p.stock), render: (p) => numero(p.stock) },
       { titulo: "Disponibilidad", render: (p) => insigniaStock(p.estado_stock) },
       ...(editar ? [{ titulo: "", clase: "num", render: (p) => h("div", { class: "acciones" },
         botonIcono("editar", `Editar ${p.nombre}`, () => abrirFormulario(p, recargar)),

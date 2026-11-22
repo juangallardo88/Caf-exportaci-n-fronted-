@@ -51,13 +51,13 @@ export async function vistaExportaciones({ params } = {}) {
     alClic: (e) => (location.hash = `#/exportaciones/${e.id}`),
     vacio: "No hay exportaciones con esos filtros",
     columnas: () => [
-      { titulo: "Consecutivo", ayuda: TERMINOS.consecutivo, render: (e) => h("span", { class: "fuerte mono" }, e.consecutivo) },
+      { titulo: "Consecutivo", ayuda: TERMINOS.consecutivo, ordenar: "consecutivo", render: (e) => h("span", { class: "fuerte mono" }, e.consecutivo) },
       { titulo: "Cliente", campo: "cliente" },
       { titulo: "Destino", campo: "pais_destino" },
       { titulo: "Incoterm", ayuda: TERMINOS.incoterm, campo: "incoterm" },
-      { titulo: "Estado", render: (e) => insigniaExportacion(e.estado) },
-      { titulo: "Embarque", render: (e) => fecha(e.fecha_embarque) },
-      { titulo: "Total", clase: "num", render: (e) => h("span", { class: "fuerte" }, moneda(e.total)) },
+      { titulo: "Estado", ordenar: (e) => ["BORRADOR", "CONFIRMADA", "EN_TRANSITO", "ENTREGADA", "CANCELADA"].indexOf(e.estado), render: (e) => insigniaExportacion(e.estado) },
+      { titulo: "Embarque", ordenar: "fecha_embarque", render: (e) => fecha(e.fecha_embarque) },
+      { titulo: "Total", clase: "num", ordenar: (e) => Number(e.total), render: (e) => h("span", { class: "fuerte" }, moneda(e.total)) },
     ],
   }).vista;
 }

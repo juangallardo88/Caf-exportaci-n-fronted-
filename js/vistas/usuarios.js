@@ -39,8 +39,8 @@ export async function vistaUsuarios() {
     acciones: (recargar) => [boton("Nuevo usuario", { icono: "mas", clase: "boton-acento", onclick: () => nuevoUsuario(recargar) })],
     cargar: () => api.get("/usuarios"),
     columnas: (recargar) => [
-      { titulo: "Nombre", render: (u) => h("div", {}, h("div", { class: "fuerte" }, u.nombre, u.id === yo.id ? " (tú)" : ""), h("div", { class: "secundario" }, u.correo)) },
-      { titulo: "Rol", render: (u) => {
+      { titulo: "Nombre", ordenar: "nombre", render: (u) => h("div", {}, h("div", { class: "fuerte" }, u.nombre, u.id === yo.id ? " (tú)" : ""), h("div", { class: "secundario" }, u.correo)) },
+      { titulo: "Rol", ordenar: "rol", render: (u) => {
         const sel = h("select", { "aria-label": `Rol de ${u.nombre}`, style: "max-width:180px", onchange: () => cambiar(u, { rol: sel.value }, recargar) },
           OPCIONES_ROL.map(([v, t]) => h("option", { value: v, selected: v === u.rol }, t)));
         return sel;

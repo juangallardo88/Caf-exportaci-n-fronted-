@@ -119,16 +119,77 @@ export const ayudaTermino = (texto) =>
 
 // ---------- Tabla ----------
 /** columnas: [{ titulo, campo | render(fila), clase }] */
-export function tabla(columnas, filas, { alClic, vacio = "No hay registros todavía" } = {}) {
+/**
+ * Tabla con orden por columna, contador y paginación.
+ * Una columna se puede ordenar si tiene `ordenar` (nombre de campo o función) o `campo`.
+ */
+export function tabla(columnas, filas, { alClic, vacio = "No hay registros todavía", porPagina = 15 } = {}) {
   // En celular cada fila se muestra como tarjeta; la columna "principal" (por defecto la primera) es su título.
   const principal = Math.max(0, columnas.findIndex((c) => c.principal));
-  const cuerpo = filas.length
-    ? filas.map((fila) => h("tr", { class: alClic ? "clic" : "", onclick: alClic ? (e) => !e.target.closest("button") && alClic(fila) : null },
-        columnas.map((c, i) => h("td", { class: [c.clase, c.titulo ? "" : "td-acciones", i === principal ? "td-principal" : ""].filter(Boolean).join(" "), dataset: { etiqueta: c.titulo || "" } },
-          c.render ? c.render(fila) : fila[c.campo] ?? "—"))))
-    : [h("tr", {}, h("td", { colspan: columnas.length }, h("div", { class: "vacio" }, icono("caja"), h("div", {}, vacio))))];
+  const claveDe = (c) => (typeof c.ordenar === "function" ? c.ordenar : c.ordenar || c.campo ? (f) => f[c.ordenar || c.campo] : null);
+  const comparar = (a, b) => {
+    if (a == null || a === "") return 1;
+    if (b == null || b === "") return -1;
+    if (typeof a === "number" && typeof b === "number") return a - b;
+    return String(a).localeCompare(String(b), "es", { numeric: true, sensitivity: "base" });
+  };
+  let orden = { indice: -1, asc: true };
+  let pagina = 0;
+
+  const fila = (f) => h("tr", { class: alClic ? "clic" : "", onclick: alClic ? (e) => !e.target.closest("button") && alClic(f) : null },
+    columnas.map((c, i) => h("td", { class: [c.clase, c.titulo ? "" : "td-acciones", i === principal ? "td-principal" : ""].filter(Boolean).join(" "), dataset: { etiqueta: c.titulo || "" } },
+      c.render ? c.render(f) : f[c.campo] ?? "—")));
+
+  const cuerpo = h("tbody");
+  const pie = h("div", { class: "tabla-pie" });
+  const encabezados = columnas.map((c, i) => {
+    const clave = claveDe(c);
+    const th = h("th", { class: c.clase || "", scope: "col" });
+    if (clave && filas.length > 1) {
+      const flecha = h("span", { class: "orden-flecha", "aria-hidden": "true" });
+      th.append(h("button", { type: "button", class: "orden", onclick: () => {
+        orden = orden.indice === i ? { indice: i, asc: !orden.asc } : { indice: i, asc: true };
+        pagina = 0;
+        pintar();
+      } }, c.titulo, flecha));
+    } else {
+      th.append(c.titulo);
+    }
+    if (c.ayuda) th.append(ayudaTermino(c.ayuda));
+    return th;
+  });
+
+  function pintar() {
+    let lista = filas;
+    if (orden.indice >= 0) {
+      const clave = claveDe(columnas[orden.indice]);
+      lista = [...filas].sort((a, b) => comparar(clave(a), clave(b)) * (orden.asc ? 1 : -1));
+    }
+    const paginas = Math.max(1, Math.ceil(lista.length / porPagina));
+    pagina = Math.min(pagina, paginas - 1);
+    const desde = pagina * porPagina;
+    const visibles = lista.slice(desde, desde + porPagina);
+    cuerpo.replaceChildren(...(visibles.length ? visibles.map(fila)
+      : [h("tr", {}, h("td", { colspan: columnas.length }, h("div", { class: "vacio" }, icono("caja"), h("div", {}, vacio))))]));
+    encabezados.forEach((th, i) => {
+      if (i === orden.indice) th.setAttribute("aria-sort", orden.asc ? "ascending" : "descending");
+      else th.removeAttribute("aria-sort");
+    });
+    if (!filas.length) { pie.replaceChildren(); pie.classList.add("oculto"); return; }
+    pie.classList.remove("oculto");
+    const texto = h("span", { class: "tabla-contador" },
+      `Mostrando ${desde + 1}–${desde + visibles.length} de ${filas.length}`);
+    const controles = paginas > 1
+      ? h("div", { class: "paginacion" },
+        boton("Anterior", { clase: "boton-sec boton-chico", disabled: pagina === 0, onclick: () => { pagina -= 1; pintar(); } }),
+        h("span", { class: "secundario" }, `Página ${pagina + 1} de ${paginas}`),
+        boton("Siguiente", { clase: "boton-sec boton-chico", disabled: pagina >= paginas - 1, onclick: () => { pagina += 1; pintar(); } }))
+      : null;
+    pie.replaceChildren(texto, controles || "");
+  }
+  pintar();
   return h("div", { class: "tabla-contenedor" },
-    h("table", {}, h("thead", {}, h("tr", {}, columnas.map((c) => h("th", { class: c.clase || "" }, c.titulo, c.ayuda ? ayudaTermino(c.ayuda) : null)))), h("tbody", {}, cuerpo)));
+    h("table", {}, h("thead", {}, h("tr", {}, encabezados)), cuerpo), pie);
 }
 
 export function tablaCargando(columnas = 5, filas = 5) {
@@ -147,7 +208,7 @@ export function errorPagina(err, reintentar) {
 
 // ---------- Formularios ----------
 /**
- * campos: [{ nombre, etiqueta, tipo, opciones:[[valor, texto]], requerido, min, max, paso, ayuda, completo, patron, mensaje }]
+ * campos: [{ nombre, etiqueta, tipo, opciones:[[valor, texto]], requerido, min, max, paso, ayuda, completo, patron, mensaje, seccion, sufijo }]
  * alEnviar(valores) debe devolver una promesa; los errores 422 del backend se muestran bajo cada campo.
  */
 export function formulario(campos, valores = {}, alEnviar, { textoBoton = "Guardar", alCancelar } = {}) {
@@ -171,12 +232,18 @@ export function formulario(campos, valores = {}, alEnviar, { textoBoton = "Guard
       });
     }
     const error = h("div", { class: "error-campo", "aria-live": "polite" });
+    // Unidad dentro del campo (kg, m³, USD): se lee junto al número y no alarga la etiqueta.
+    const entrada = c.sufijo
+      ? h("div", { class: "campo-con-sufijo" }, control, h("span", { class: "sufijo", "aria-hidden": "true" }, c.sufijo))
+      : control;
+    if (c.sufijo) control.setAttribute("aria-label", `${c.etiqueta} en ${c.sufijoLargo || c.sufijo}`);
     const campo = h("div", { class: `campo ${c.completo ? "completo" : ""}` },
-      h("label", { for: id }, c.etiqueta, c.requerido ? " *" : ""), control,
+      h("label", { for: id }, c.etiqueta, c.requerido ? " *" : ""), entrada,
       c.ayuda ? h("div", { class: "ayuda" }, c.ayuda) : null, error);
     refs[c.nombre] = { control, error, campo, def: c };
     control.addEventListener("input", () => { campo.classList.remove("invalido"); error.textContent = ""; });
-    return campo;
+    // Un título de sección agrupa los campos que siguen.
+    return c.seccion ? [h("div", { class: "formulario-seccion completo" }, c.seccion), campo] : campo;
   });
 
   const enviar = boton(textoBoton, { clase: "boton-acento", type: "submit" });

@@ -13,6 +13,20 @@ const DEMO = [
 export function vistaLogin() {
   const correo = h("input", { id: "correo", type: "email", required: true, autocomplete: "username", placeholder: "nombre@ritech.co" });
   const clave = h("input", { id: "contrasena", type: "password", required: true, autocomplete: "current-password" });
+  // Mostrar u ocultar la contraseña, y avisar si las mayúsculas están activadas.
+  const verClave = h("button", { type: "button", class: "ver-clave", "aria-label": "Mostrar contraseña", "aria-pressed": "false" }, icono("ojo"));
+  verClave.addEventListener("click", () => {
+    const visible = clave.type === "password";
+    clave.type = visible ? "text" : "password";
+    verClave.setAttribute("aria-pressed", String(visible));
+    verClave.setAttribute("aria-label", visible ? "Ocultar contraseña" : "Mostrar contraseña");
+    verClave.replaceChildren(icono(visible ? "ojoCerrado" : "ojo"));
+    clave.focus();
+  });
+  const mayusculas = h("div", { class: "aviso-mayusculas oculto", role: "status" }, icono("alerta"), "Las mayúsculas están activadas");
+  const revisarMayusculas = (e) => mayusculas.classList.toggle("oculto", !e.getModifierState?.("CapsLock"));
+  clave.addEventListener("keydown", revisarMayusculas);
+  clave.addEventListener("keyup", revisarMayusculas);
   const error = h("div", { class: "alerta-caja error oculto", role: "alert" });
   const entrar = h("button", { class: "boton boton-acento", type: "submit", style: "width:100%;padding:12px" }, "Iniciar sesión");
   const servidor = h("div", { class: "estado-servidor", role: "status", "aria-live": "polite" });
@@ -34,11 +48,13 @@ export function vistaLogin() {
     h("div", {}, h("h2", {}, "Bienvenido"), h("p", { class: "secundario", style: "margin:6px 0 0" }, "Ingresa con tu cuenta corporativa")),
     error,
     h("div", { class: "campo" }, h("label", { for: "correo" }, "Correo"), correo),
-    h("div", { class: "campo" }, h("label", { for: "contrasena" }, "Contraseña"), clave),
+    h("div", { class: "campo" }, h("label", { for: "contrasena" }, "Contraseña"),
+      h("div", { class: "campo-con-boton" }, clave, verClave), mayusculas),
     entrar,
     espera,
     servidor,
-    h("div", { class: "demo" }, h("strong", {}, "Usuarios de demostración: "),
+    h("div", { class: "demo" }, h("span", { class: "demo-etiqueta" }, "Modo demostración"),
+      h("span", {}, "Entra con un usuario de prueba: "),
       DEMO.map(([c, p, rol], i) => [i ? " · " : "", h("button", { type: "button", onclick: () => { correo.value = c; clave.value = p; } }, rol)])));
 
   form.addEventListener("submit", async (e) => {

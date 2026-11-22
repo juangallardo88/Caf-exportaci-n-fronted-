@@ -421,4 +421,77 @@ def test_logo_de_granos_carga_en_inicio_menu_y_pestana(pagina):
     iniciar_sesion(pagina, *ADMIN)
     pagina.wait_for_function("document.querySelector('.lateral .marca-logo')?.naturalWidth > 0")
     ancho = pagina.evaluate("document.querySelector('.lateral .marca-logo').getBoundingClientRect().width")
-    assert ancho >= 150, f"El logo del menú se ve muy pequeño: {ancho}px"
+    assert ancho >= 120, f"El logo del menú se ve muy pequeño: {ancho}px"
+
+
+
+# ---------- Arreglos de acabado profesional ----------
+
+def test_auditor_ve_pendientes_como_informacion(pagina):  # HU-03 + HU-27
+    iniciar_sesion(pagina, *AUDITOR)
+    panel = pagina.locator(".tarjeta", has=pagina.get_by_role("heading", name="Qué requiere atención"))
+    expect(panel.locator(".pendiente").first).to_be_visible()
+    texto = panel.inner_text().lower()
+    for instruccion in ("confírma", "márca", "registra el transporte", "revisar"):
+        assert instruccion not in texto, f"El auditor ve una instrucción que no puede ejecutar: {instruccion}"
+
+
+def test_menu_lateral_cabe_sin_desplazamiento_en_portatil(nueva_pagina):
+    pagina = nueva_pagina(1366, 768)
+    iniciar_sesion(pagina, *ADMIN)
+    cabe = pagina.evaluate("(() => { const m = document.querySelector('.menu'); return m.scrollHeight <= m.clientHeight + 1; })()")
+    assert cabe, "El menú lateral necesita desplazamiento en una pantalla de 1366 × 768"
+    expect(pagina.locator(".menu").get_by_role("link", name="Guía de uso")).to_be_in_viewport()
+
+
+def test_grafica_mensual_no_salta_meses(pagina):  # HU-28
+    iniciar_sesion(pagina, *ADMIN)
+    grafica = pagina.get_by_role("img", name="Valor exportado por mes")
+    etiquetas = grafica.evaluate("g => [...g.querySelectorAll('text')].map((t) => t.textContent)")
+    meses = [t for t in etiquetas if t[:3] in ("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")]
+    nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    indices = [nombres.index(m[:3]) + 12 * int(m[-2:]) for m in meses]
+    assert indices == list(range(indices[0], indices[0] + len(indices))), f"Faltan meses en la gráfica: {meses}"
+
+
+def test_codigos_usan_la_fuente_del_sitio(pagina):
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/exportaciones")
+    fuente = pagina.locator("td .mono").first.evaluate("e => getComputedStyle(e).fontFamily")
+    assert fuente.startswith("Inter"), f"Los códigos usan otra fuente: {fuente}"
+
+
+def test_tablas_se_ordenan_y_muestran_contador(pagina):  # HU-17
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/productos")
+    expect(pagina.locator(".tabla-contador")).to_contain_text("Mostrando 1–")
+    encabezado = pagina.locator("th", has=pagina.locator(".orden", has_text="Precio"))
+    encabezado.locator(".orden").click()
+    expect(encabezado).to_have_attribute("aria-sort", "ascending")
+    encabezado.locator(".orden").click()
+    expect(encabezado).to_have_attribute("aria-sort", "descending")
+    precios = pagina.locator("tbody tr td:nth-child(4)").all_inner_texts()
+    valores = [float(p.replace("US$", "").replace(".", "").replace(",", ".").strip()) for p in precios]
+    assert valores == sorted(valores, reverse=True), f"No quedó ordenado de mayor a menor: {precios}"
+
+
+def test_formulario_de_producto_agrupa_campos_y_muestra_unidades(pagina):  # HU-04
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/productos")
+    pagina.get_by_role("button", name="Nuevo producto").click()
+    modal = pagina.get_by_role("dialog")
+    for seccion in ("Identificación", "Empaque y transporte", "Inventario inicial", "Detalle"):
+        expect(modal.locator(".formulario-seccion", has_text=seccion)).to_be_visible()
+    expect(modal.locator("#campo-sku")).to_have_attribute("placeholder", "Ej.: CAF-NAR-70")
+    expect(modal.locator(".sufijo", has_text="kg")).to_be_visible()
+    expect(modal.locator("#campo-precio")).to_have_attribute("aria-label", "Precio unitario en dólares")
+
+
+def test_inicio_permite_ver_la_contrasena_y_marca_la_demo(pagina):  # HU-01
+    pagina.fill("#contrasena", "secreto")
+    boton = pagina.get_by_role("button", name="Mostrar contraseña")
+    boton.click()
+    expect(pagina.locator("#contrasena")).to_have_attribute("type", "text")
+    pagina.get_by_role("button", name="Ocultar contraseña").click()
+    expect(pagina.locator("#contrasena")).to_have_attribute("type", "password")
+    expect(pagina.locator(".demo-etiqueta")).to_have_text("Modo demostración")

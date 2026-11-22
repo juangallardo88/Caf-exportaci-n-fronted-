@@ -55,10 +55,10 @@ export async function vistaInventario({ params } = {}) {
       if (pestana === "movimientos") {
         const movimientos = await api.get("/inventario/movimientos", { limite: 100 });
         zona.replaceChildren(h("div", { class: "tarjeta" }, tabla([
-          { titulo: "Fecha", render: (m) => h("span", { class: "secundario" }, m.fecha.slice(0, 16)) },
-          { titulo: "Producto", principal: true, render: (m) => h("div", {}, h("div", { class: "fuerte" }, m.producto), h("div", { class: "secundario mono" }, m.sku)) },
+          { titulo: "Fecha", ordenar: "fecha", render: (m) => h("span", { class: "secundario" }, m.fecha.slice(0, 16)) },
+          { titulo: "Producto", principal: true, ordenar: "producto", render: (m) => h("div", {}, h("div", { class: "fuerte" }, m.producto), h("div", { class: "secundario mono" }, m.sku)) },
           { titulo: "Tipo", render: (m) => insignia(...TIPOS[m.tipo]) },
-          { titulo: "Cantidad", clase: "num", render: (m) => (m.tipo === "SALIDA" ? "−" : m.cantidad > 0 && m.tipo === "AJUSTE" ? "+" : "") + numero(Math.abs(m.cantidad)) },
+          { titulo: "Cantidad", clase: "num", ordenar: (m) => Number(m.cantidad), render: (m) => (m.tipo === "SALIDA" ? "−" : m.cantidad > 0 && m.tipo === "AJUSTE" ? "+" : "") + numero(Math.abs(m.cantidad)) },
           { titulo: "Motivo", campo: "motivo" },
           { titulo: "Usuario", render: (m) => m.usuario || "—" },
         ], movimientos, { vacio: "Aún no hay movimientos" })));
@@ -70,10 +70,10 @@ export async function vistaInventario({ params } = {}) {
           h("div", {}, `${filas.length} producto(s) están en o por debajo de su stock mínimo. Programa su reposición.`))
         : null;
       zona.replaceChildren(h("div", { class: "tarjeta" }, alerta, tabla([
-        { titulo: "Producto", render: (p) => h("div", {}, h("div", { class: "fuerte" }, p.nombre), h("div", { class: "secundario mono" }, p.sku)) },
+        { titulo: "Producto", ordenar: "nombre", render: (p) => h("div", {}, h("div", { class: "fuerte" }, p.nombre), h("div", { class: "secundario mono" }, p.sku)) },
         { titulo: "Ubicación", campo: "ubicacion" },
-        { titulo: "Cantidad", clase: "num", render: (p) => h("span", { class: "fuerte" }, numero(p.cantidad)) },
-        { titulo: "Stock mínimo", clase: "num", render: (p) => numero(p.stock_minimo) },
+        { titulo: "Cantidad", clase: "num", ordenar: (p) => Number(p.cantidad), render: (p) => h("span", { class: "fuerte" }, numero(p.cantidad)) },
+        { titulo: "Stock mínimo", clase: "num", ordenar: (p) => Number(p.stock_minimo), render: (p) => numero(p.stock_minimo) },
         { titulo: "Estado", render: (p) => insigniaStock(p.estado_stock) },
         ...(editar ? [{ titulo: "", clase: "num", render: (p) => h("div", { class: "acciones" },
           botonIcono("flechas", `Movimiento de ${p.nombre}`, () => abrirMovimiento(productos, recargar, p.producto_id)),

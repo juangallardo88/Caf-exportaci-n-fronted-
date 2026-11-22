@@ -32,8 +32,8 @@ export async function vistaPaises() {
     acciones: (recargar) => admin ? [boton("Nuevo país", { icono: "mas", clase: "boton-acento", onclick: () => abrirFormulario(null, recargar) })] : [],
     cargar: () => api.get("/paises"),
     columnas: (recargar) => [
-      { titulo: "País", render: (p) => h("span", { class: "fuerte" }, p.nombre) },
-      { titulo: "ISO 2", render: (p) => h("span", { class: "mono" }, p.codigo_iso2) },
+      { titulo: "País", ordenar: "nombre", render: (p) => h("span", { class: "fuerte" }, p.nombre) },
+      { titulo: "ISO 2", ordenar: "codigo_iso2", render: (p) => h("span", { class: "mono" }, p.codigo_iso2) },
       { titulo: "ISO 3", render: (p) => h("span", { class: "mono" }, p.codigo_iso3) },
       { titulo: "Región", campo: "region" },
       ...(admin ? [{ titulo: "", clase: "num", render: (p) => h("div", { class: "acciones" },

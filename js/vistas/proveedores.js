@@ -53,8 +53,8 @@ export async function vistaProveedores() {
     cargar: (f) => api.get("/proveedores", f),
     vacio: "No hay proveedores con esos filtros",
     columnas: (recargar) => [
-      { titulo: "NIT / RUT", ayuda: TERMINOS.nit, render: (p) => h("span", { class: "mono" }, p.nit) },
-      { titulo: "Razón social", principal: true, render: (p) => h("div", {}, h("div", { class: "fuerte" }, p.razon_social), h("div", { class: "secundario" }, p.direccion)) },
+      { titulo: "NIT / RUT", ayuda: TERMINOS.nit, ordenar: "nit", render: (p) => h("span", { class: "mono" }, p.nit) },
+      { titulo: "Razón social", principal: true, ordenar: "razon_social", render: (p) => h("div", {}, h("div", { class: "fuerte" }, p.razon_social), h("div", { class: "secundario" }, p.direccion)) },
       { titulo: "País", campo: "pais" },
       { titulo: "Contacto", render: (p) => h("div", {}, h("div", {}, p.telefono), h("div", { class: "secundario" }, p.correo)) },
       { titulo: "Condiciones", render: (p) => h("span", { class: "secundario" }, p.condiciones_comerciales || "—") },

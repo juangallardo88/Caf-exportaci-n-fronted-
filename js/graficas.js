@@ -26,7 +26,7 @@ export function columnas(datos, { formato = String, alto = 220, titulo = "Gráfi
     const x = margenIzq + i * paso + (paso - barra) / 2;
     const y = margenSup + area - altura;
     grafica.append(
-      svg("rect", { x, y, width: barra, height: altura, rx: 6, fill: "#9A4F14" }, svg("title", {}, `${d.etiqueta}: ${formato(d.valor)}`)),
+      svg("rect", { x, y, width: barra, height: altura, rx: 6, fill: d.valor > 0 ? "#9A4F14" : "#CDB79A" }, svg("title", {}, `${d.etiqueta}: ${formato(d.valor)}`)),
       svg("text", { x: x + barra / 2, y: y - 6, "text-anchor": "middle", "font-weight": 600 }, formato(d.valor)),
       svg("text", { x: x + barra / 2, y: alto - 8, "text-anchor": "middle" }, d.etiqueta),
     );

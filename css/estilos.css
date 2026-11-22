@@ -46,29 +46,29 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .lateral {
   background: var(--espresso);
   color: var(--crema);
-  padding: 24px 16px;
-  display: flex; flex-direction: column; gap: 24px;
+  padding: 18px 16px;
+  display: flex; flex-direction: column; gap: 14px;
   position: sticky; top: 0; height: 100vh;
 }
 .marca { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 0 4px; }
 /* Logo: tres granos en fila, arriba del nombre. */
-.marca-logo { width: 168px; height: auto; display: block; margin-left: -6px; }
+.marca-logo { width: 136px; height: auto; display: block; margin-left: -6px; }
 .login-arte .marca-logo { width: 280px; margin-left: -10px; }
 .login-arte .marca-nombre { font-size: 22px; }
 .marca-nombre { font-family: var(--fuente-titulo); font-weight: 700; font-size: 18px; line-height: 1.1; white-space: nowrap; }
 .marca-sub { font-size: 12px; color: #C9B8A3; }
 .menu { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
-.menu-grupo { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #A8937D; padding: 16px 12px 6px; }
+.menu-grupo { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #A8937D; padding: 10px 12px 3px; }
 .menu a {
   display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; border-radius: 10px;
+  padding: 7px 12px; border-radius: 10px;
   color: #E8DCCB; text-decoration: none; font-weight: 500;
   transition: background .15s, color .15s;
 }
 .menu a:hover { background: var(--espresso-2); color: #fff; }
 .menu a.activo { background: var(--cobre-claro); color: var(--espresso); }
 .menu svg { width: 18px; height: 18px; flex: none; }
-.lateral-pie { margin-top: auto; border-top: 1px solid var(--espresso-3); padding-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+.lateral-pie { margin-top: auto; border-top: 1px solid var(--espresso-3); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
 .usuario-chip { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
 .avatar {
   width: 36px; height: 36px; border-radius: 50%; flex: none;
@@ -159,7 +159,7 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--cobre); box-shadow: 0 0 0 3px var(--cobre-fondo); }
 .campo.invalido input, .campo.invalido select, .campo.invalido textarea { border-color: var(--error); }
 textarea { min-height: 80px; resize: vertical; }
-.formulario { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.formulario { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
 .formulario .completo { grid-column: 1 / -1; }
 .formulario-acciones { display: flex; justify-content: flex-end; gap: 10px; grid-column: 1 / -1; margin-top: 4px; }
 .filtros { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; padding: 16px 24px; border-bottom: 1px solid var(--borde); }
@@ -181,7 +181,9 @@ tr.clic { cursor: pointer; }
 .acciones { display: flex; gap: 4px; justify-content: flex-end; }
 .secundario { color: var(--texto-2); font-size: 13px; }
 .fuerte { font-weight: 600; }
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+/* Códigos (consecutivos, SKU, NIT): la misma fuente del sitio con cifras de ancho fijo, en lugar de la monoespaciada del sistema. */
+.mono { font-family: var(--fuente); font-variant-numeric: tabular-nums; font-size: 13.5px; font-weight: 500; }
+.mono.fuerte, .fuerte .mono { font-weight: 650; }
 
 .vacio { padding: 48px 24px; text-align: center; color: var(--texto-2); }
 .vacio svg { width: 40px; height: 40px; color: var(--borde); margin-bottom: 8px; }
@@ -477,7 +479,8 @@ th .termino-ayuda::after { left: 0; transform: none; }
 .principal { --texto-2: #5A4838; }
 .principal .tarjeta {
   background: var(--superficie);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15); backdrop-filter: blur(14px) saturate(1.15);
+  /* Desenfoque moderado: suficiente para leer sobre el video sin exigir demasiado a equipos modestos. */
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   border-color: rgba(205, 180, 148, .55);
   box-shadow: 0 1px 2px rgba(43, 29, 20, .08), 0 10px 30px rgba(43, 29, 20, .12);
 }
@@ -505,3 +508,36 @@ th { background: transparent; }
 .principal .pasos-caja .pasos { background: none; border: 0; padding: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
 .principal .migas { display: inline-flex; padding: 4px 12px; border-radius: 999px; background: rgba(223, 205, 180, .86);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+
+
+/* ---------- Tablas: orden por columna, contador y paginación ---------- */
+th .orden { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; border-radius: 4px; }
+th .orden:hover { color: var(--texto); }
+th .orden:focus-visible { outline: 2px solid var(--cobre); outline-offset: 2px; }
+.orden-flecha { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor; opacity: .25; transition: transform .15s, opacity .15s; }
+th[aria-sort] .orden-flecha { opacity: .9; }
+th[aria-sort="ascending"] .orden-flecha { transform: rotate(180deg); }
+.tabla-pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 24px; border-top: 1px solid var(--borde); font-size: 13px; color: var(--texto-2); }
+.paginacion { display: flex; align-items: center; gap: 10px; }
+.paginacion .boton[disabled] { opacity: .45; cursor: not-allowed; }
+@media (max-width: 640px) { .tabla-pie { padding: 4px 12px 12px; border-top: 0; } }
+
+/* ---------- Formularios: secciones, unidades y contraseña ---------- */
+.formulario-seccion { font-family: var(--fuente-titulo); font-weight: 700; font-size: 13px; letter-spacing: .04em; color: var(--cobre);
+  margin-bottom: -8px; border-top: 1px solid var(--borde); padding-top: 12px; }
+.formulario > .formulario-seccion:first-of-type, .formulario > .alerta-caja + .formulario-seccion { border-top: 0; padding-top: 0; }
+.campo-con-sufijo, .campo-con-boton { position: relative; display: flex; align-items: center; }
+.campo-con-sufijo input, .campo-con-boton input { width: 100%; }
+.campo-con-sufijo input { padding-right: 56px; }
+.sufijo { position: absolute; right: 12px; font-size: 13px; font-weight: 600; color: var(--texto-2); pointer-events: none; }
+.campo-con-boton input { padding-right: 44px; }
+.ver-clave { position: absolute; right: 6px; width: 34px; height: 34px; border: 0; border-radius: 8px; background: none; color: var(--texto-2);
+  display: grid; place-items: center; cursor: pointer; }
+.ver-clave:hover { background: rgba(154, 79, 20, .1); color: var(--texto); }
+.ver-clave:focus-visible { outline: 2px solid var(--cobre); outline-offset: 1px; }
+.ver-clave svg { width: 18px; height: 18px; }
+.aviso-mayusculas { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--alerta); }
+.aviso-mayusculas svg { width: 14px; height: 14px; }
+.demo { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.demo-etiqueta { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--cobre);
+  background: rgba(154, 79, 20, .12); padding: 2px 8px; border-radius: 999px; margin-right: 4px; }
