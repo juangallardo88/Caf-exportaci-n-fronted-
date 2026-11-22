@@ -475,38 +475,40 @@ th .termino-ayuda::after { left: 0; transform: none; }
 /* Superficies en tonos crema tomados del video en lugar de blanco; las tarjetas son translúcidas
    para que el video se vea a través de ellas sin afectar la lectura. */
 :root {
-  --blanco: #EDDFCB;
-  --superficie: rgba(236, 222, 202, .86);
-  --superficie-campo: #F6ECDE;
-  --borde: #D9C5AA;
+  --blanco: #E0CDB2;
+  --superficie: rgba(223, 205, 180, .87);
+  --superficie-campo: #EDDFCB;
+  --borde: #CBB291;
 }
+/* Texto secundario un poco más oscuro para mantener el contraste sobre el crema tostado. */
+.principal { --texto-2: #5A4838; }
 .principal .tarjeta {
   background: var(--superficie);
   -webkit-backdrop-filter: blur(14px) saturate(1.15); backdrop-filter: blur(14px) saturate(1.15);
   border-color: rgba(205, 180, 148, .55);
   box-shadow: 0 1px 2px rgba(43, 29, 20, .08), 0 10px 30px rgba(43, 29, 20, .12);
 }
-.modal.tarjeta, .fondo-modal .tarjeta { background: #EEE0CC; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.modal.tarjeta, .fondo-modal .tarjeta { background: #E3D1B8; -webkit-backdrop-filter: none; backdrop-filter: none; }
 input, select, textarea { background: var(--superficie-campo); }
-.buscador input { background: rgba(246, 236, 222, .92); }
+.buscador input { background: rgba(237, 223, 203, .92); }
 tbody tr:hover { background: rgba(154, 79, 20, .06); }
 th { background: transparent; }
 
 /* El video se ve con más color: velo cálido más ligero y sin desenfoque. */
 .video-app .video-fondo { filter: saturate(1.1); transform: none; }
-.video-app::after { background: linear-gradient(180deg, rgba(240, 226, 206, .48) 0%, rgba(240, 226, 206, .30) 45%, rgba(240, 226, 206, .40) 100%); }
-.principal > .barra { background: rgba(243, 231, 214, .62); border-bottom-color: rgba(205, 180, 148, .5); }
+.video-app::after { background: linear-gradient(180deg, rgba(240, 226, 206, .28) 0%, rgba(240, 226, 206, .14) 45%, rgba(240, 226, 206, .24) 100%); }
+.principal > .barra { background: rgba(232, 216, 194, .64); border-bottom-color: rgba(205, 180, 148, .5); }
 
 @media (max-width: 640px) {
-  .principal .tabla-contenedor tbody tr { background: rgba(244, 233, 217, .75); }
+  .principal .tabla-contenedor tbody tr { background: rgba(233, 218, 196, .78); }
 }
 /* Títulos y progreso sobre un panel crema translúcido, para que se lean aunque detrás pase la escena oscura del video. */
 .principal .encabezado, .principal .pasos, .principal .pasos-caja {
-  background: rgba(236, 222, 202, .80); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  background: rgba(223, 205, 180, .82); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   border: 1px solid rgba(190, 162, 128, .5); border-radius: var(--radio); }
 .principal .encabezado { padding: 18px 22px; }
 .principal .pasos { padding: 16px 12px; }
 .principal .pasos-caja { padding: 16px; }
 .principal .pasos-caja .pasos { background: none; border: 0; padding: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
-.principal .migas { display: inline-flex; padding: 4px 12px; border-radius: 999px; background: rgba(236, 222, 202, .84);
+.principal .migas { display: inline-flex; padding: 4px 12px; border-radius: 999px; background: rgba(223, 205, 180, .86);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
