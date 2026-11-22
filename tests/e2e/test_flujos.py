@@ -337,3 +337,64 @@ def test_guia_de_uso_explica_proceso_roles_y_terminos(pagina):
     expect(pagina.locator(".columna-propia")).to_have_text("Operador")
     expect(pagina.locator(".lista-terminos").first).to_contain_text("Franco a bordo")
     capturar(pagina, "11-guia")
+
+
+# ---------- Video de marca: inicio de sesión y fondo de las pantallas internas ----------
+
+VIDEO_AVANZA = """async (selector) => {
+  const v = document.querySelector(selector);
+  if (!v || v.paused) return false;
+  const inicio = v.currentTime;
+  await new Promise((listo) => setTimeout(listo, 600));
+  return v.currentTime > inicio;
+}"""
+
+
+def test_inicio_reproduce_el_video_de_marca(pagina):
+    expect(pagina.locator(".video-login video")).to_have_count(1)
+    pagina.wait_for_function("document.querySelector('.video-login video').readyState >= 2")
+    assert pagina.evaluate(VIDEO_AVANZA, ".video-login video"), "El video del inicio no se está reproduciendo"
+    expect(pagina.locator(".video-login video")).to_have_js_property("muted", True)
+    expect(pagina.get_by_role("button", name="Pausar animación")).to_be_visible()
+
+
+def test_video_de_fondo_sigue_al_cambiar_de_pantalla(pagina):
+    iniciar_sesion(pagina, *ADMIN)
+    pagina.wait_for_function("document.querySelector('.video-app video').readyState >= 2")
+    pagina.evaluate("window.__videoInicial = document.querySelector('.video-app video')")
+    ir(pagina, "/exportaciones")
+    expect(pagina.locator("h1")).to_have_text("Exportaciones")
+    ir(pagina, "/guia")
+    expect(pagina.locator("h1")).to_have_text("Guía de uso")
+    assert pagina.evaluate("document.querySelector('.video-app video') === window.__videoInicial"), "El video se reinició"
+    assert pagina.evaluate(VIDEO_AVANZA, ".video-app video"), "El video de fondo no se está reproduciendo"
+
+
+def test_pausar_el_video_se_recuerda(pagina):
+    iniciar_sesion(pagina, *ADMIN)
+    pagina.get_by_role("button", name="Pausar animación").click()
+    expect(pagina.get_by_role("button", name="Reproducir animación")).to_be_visible()
+    assert pagina.evaluate("document.querySelector('.video-app video').paused")
+    pagina.reload()
+    expect(pagina.locator(".kpi-valor").first).to_be_visible()
+    expect(pagina.get_by_role("button", name="Reproducir animación")).to_be_visible()
+    assert pagina.evaluate("document.querySelector('.video-app video').paused")
+    pagina.get_by_role("button", name="Reproducir animación").click()
+    expect(pagina.get_by_role("button", name="Pausar animación")).to_be_visible()
+
+
+def test_con_movimiento_reducido_el_video_queda_quieto(pagina):
+    pagina.emulate_media(reduced_motion="reduce")
+    pagina.reload()
+    video = pagina.locator(".video-login video")
+    expect(video).to_have_attribute("poster", "media/cafe-inicio.jpg")
+    pagina.wait_for_timeout(800)
+    assert pagina.evaluate("document.querySelector('.video-login video').paused")
+
+
+def test_cifras_del_dashboard_caben_en_su_tarjeta(nueva_pagina):
+    for ancho in (1280, 1440):
+        pagina = nueva_pagina(ancho, 900)
+        iniciar_sesion(pagina, *ADMIN)
+        cortadas = pagina.evaluate("[...document.querySelectorAll('.kpi-valor')].filter((e) => e.scrollWidth > e.clientWidth).length")
+        assert cortadas == 0, f"{cortadas} cifra(s) cortada(s) a {ancho}px"

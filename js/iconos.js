@@ -25,6 +25,8 @@ const TRAZOS = {
   flechas: '<path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/>',
   calendario: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   volver: '<path d="M15 6l-6 6 6 6"/>',
+  pausa: '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',
+  reproducir: '<path d="M7 5l12 7-12 7z"/>',
 };
 
 export function icono(nombre, clase = "") {

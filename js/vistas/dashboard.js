@@ -11,7 +11,7 @@ const compacto = (v) => (v >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.roun
 
 const kpi = (ic, valor, etiqueta, explicacion, clase = "") =>
   h("div", { class: `tarjeta kpi ${clase}` }, h("div", { class: "kpi-icono" }, icono(ic)),
-    h("div", { class: "kpi-valor" }, valor), h("div", { class: "kpi-etiqueta" }, etiqueta),
+    h("div", { class: `kpi-valor${String(valor).length > 10 ? " kpi-valor-largo" : ""}` }, valor), h("div", { class: "kpi-etiqueta" }, etiqueta),
     h("div", { class: "kpi-explicacion" }, explicacion));
 
 const DIA = 86400000;

@@ -120,7 +120,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
   background: var(--cobre-fondo); color: var(--cobre); margin-bottom: 6px;
 }
 .kpi-icono svg { width: 20px; height: 20px; }
-.kpi-valor { font-family: var(--fuente-titulo); font-size: 30px; font-weight: 700; }
+.kpi { container-type: inline-size; }
+.kpi-valor { font-family: var(--fuente-titulo); font-size: 30px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.kpi-valor-largo { font-size: clamp(20px, 11.5cqi, 30px); }
 .kpi-etiqueta { color: var(--texto-2); font-size: 14px; }
 .kpi-alerta .kpi-icono { background: var(--alerta-fondo); color: var(--alerta); }
 
@@ -267,7 +269,6 @@ tr.clic { cursor: pointer; }
 }
 .login-arte h1 { font-size: 48px; line-height: 1.05; max-width: 520px; }
 .login-arte p { color: #C9B8A3; font-size: 17px; max-width: 460px; line-height: 1.6; }
-.login-arte .grano { position: absolute; right: -80px; bottom: -80px; width: 420px; opacity: .14; }
 .login-formulario { display: grid; place-items: center; padding: 32px; }
 .login-caja { width: min(420px, 100%); display: flex; flex-direction: column; gap: 18px; }
 .login-caja h2 { font-size: 30px; }
@@ -283,6 +284,7 @@ tr.clic { cursor: pointer; }
 .resultado:hover { background: var(--crema-2); }
 
 /* ---------- Responsive ---------- */
+@media (max-width: 1240px) { .rejilla-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 1100px) {
   .rejilla-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rejilla-detalle, .rejilla-3 { grid-template-columns: 1fr; }
@@ -423,4 +425,50 @@ th .termino-ayuda::after { left: 0; transform: none; }
   .tabla-fija tbody tr { display: table-row !important; border: 0 !important; padding: 0 !important; }
   .tabla-fija td { display: table-cell !important; padding: 8px 6px !important; border-bottom: 1px solid var(--borde) !important; font-size: 13px; }
   .tabla-fija td::before { content: none !important; }
+}
+
+/* ---------- Video de marca: inicio de sesión y fondo de las pantallas internas ---------- */
+.video-capa { position: relative; overflow: hidden; }
+.video-fondo { display: block; width: 100%; height: 100%; object-fit: cover; }
+.video-control { position: absolute; z-index: 2; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,248,238,.35);
+  background: rgba(30,18,12,.55); color: #FFF8EE; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(6px); }
+.video-control:hover { background: rgba(30,18,12,.8); }
+.video-control:focus-visible { outline: 2px solid var(--cobre-claro); outline-offset: 2px; }
+.video-control svg { width: 14px; height: 14px; fill: currentColor; stroke: none; }
+
+/* Inicio: el video ocupa toda la pantalla; el texto va sobre un degradado oscuro y el formulario en una tarjeta. */
+.login { position: relative; isolation: isolate; background: var(--espresso); }
+.video-login { position: absolute; inset: 0; z-index: -1; }
+.video-login .video-fondo { object-position: 100% center; }
+.login .login-formulario { place-items: center end; padding-right: clamp(32px, 5vw, 80px); }
+.video-login::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, rgba(28,16,11,.9) 0%, rgba(28,16,11,.6) 34%, rgba(28,16,11,.12) 62%, rgba(28,16,11,.18) 100%); }
+.video-login .video-control { top: 20px; right: 20px; }
+.login-arte { background: none; pointer-events: none; }
+.login-arte > * { pointer-events: auto; }
+.login-arte h1 { text-shadow: 0 2px 24px rgba(0,0,0,.35); }
+.login-arte p { color: #E6D7C3; }
+.login-formulario { pointer-events: none; }
+.login-caja { pointer-events: auto; background: var(--blanco); padding: 36px 32px; border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(20,10,5,.35), 0 2px 6px rgba(20,10,5,.12); }
+
+/* Pantallas internas: el video corre detrás del contenido, suavizado para que tablas y textos se lean. */
+.video-app { position: fixed; inset: 0 0 0 260px; z-index: 0; pointer-events: none; }
+.video-app .video-fondo { filter: blur(1.5px) saturate(1.05); transform: scale(1.03); }
+.video-app::after { content: ""; position: absolute; inset: 0; background: rgba(247, 242, 234, .70); }
+.principal > .video-control { position: fixed; right: 20px; bottom: 20px; z-index: 10;
+  background: rgba(43, 29, 20, .78); border-color: rgba(255,248,238,.25); box-shadow: var(--sombra); }
+.principal { position: relative; }
+.principal > .barra, .principal > .contenido { position: relative; z-index: 1; }
+.principal > .barra { background: rgba(247, 242, 234, .72); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.encabezado h1 { text-shadow: 0 1px 12px rgba(247, 242, 234, .9); }
+.encabezado p { color: #4F3E31; }
+
+@media (max-width: 860px) {
+  .video-login { inset: 0 0 auto 0; height: 340px; }
+  .video-login::after { background: linear-gradient(180deg, rgba(28,16,11,.35) 0%, rgba(28,16,11,.85) 100%); }
+  .login-arte { min-height: 340px; justify-content: space-between; }
+  .login .login-formulario { background: var(--crema); place-items: center; padding: 32px; }
+  .login-caja { box-shadow: none; padding: 8px 0; background: none; }
+  .video-app { left: 0; }
 }

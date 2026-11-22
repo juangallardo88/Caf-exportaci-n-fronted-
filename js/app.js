@@ -2,7 +2,7 @@
 import { api } from "./api.js";
 import { icono } from "./iconos.js";
 import { ROLES, borrarSesion, esAdmin, obtenerSesion, puedeVerReportes, usuario } from "./sesion.js";
-import { avisar, cargandoPagina, errorPagina, h } from "./ui.js";
+import { avisar, cargandoPagina, errorPagina, h, videoFondo } from "./ui.js";
 
 import { vistaLogin } from "./vistas/login.js";
 import { vistaDashboard } from "./vistas/dashboard.js";
@@ -66,6 +66,9 @@ async function cerrarSesion() {
 
 function layout() {
   const u = usuario();
+  // Video de fondo de las pantallas internas. Su botón de pausa va aparte, por encima del contenido.
+  const fondo = videoFondo("cafe-inicio", "video-app");
+  const controlVideo = fondo.querySelector(".video-control");
   const iniciales = u.nombre.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
   const app = h("div", { class: "app" });
   const busqueda = h("input", { type: "search", placeholder: "Buscar productos, clientes, proveedores, exportaciones…", "aria-label": "Búsqueda global" });
@@ -86,10 +89,12 @@ function layout() {
           h("div", {}, h("div", { class: "usuario-nombre" }, u.nombre), h("div", { class: "usuario-rol" }, ROLES[u.rol]))),
         h("button", { class: "boton boton-claro", type: "button", onclick: cerrarSesion }, icono("salir"), "Cerrar sesión"))),
     h("div", { class: "principal" },
+      fondo,
       h("header", { class: "barra" },
         h("button", { class: "boton boton-sec boton-menu", type: "button", "aria-label": "Abrir menú", onclick: () => app.classList.toggle("menu-abierto") }, icono("menu")),
         h("div", { class: "buscador" }, icono("buscar"), busqueda)),
-      h("main", { class: "contenido", id: "contenido" })));
+      h("main", { class: "contenido", id: "contenido" }),
+      controlVideo));
   app.addEventListener("click", (e) => {
     const fueraDelMenu = !e.target.closest(".lateral") && !e.target.closest(".boton-menu");
     if (e.target.closest(".menu a") || fueraDelMenu) app.classList.remove("menu-abierto");

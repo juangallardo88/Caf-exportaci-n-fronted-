@@ -95,6 +95,39 @@ export function confirmar(mensaje, { titulo = "Confirmar", textoBoton = "Confirm
   });
 }
 
+// ---------- Video de fondo ----------
+// Video decorativo, sin sonido y en bucle. Con "reducir movimiento" activado queda la imagen fija.
+// Incluye un botón para pausarlo: el contenido en movimiento de más de 5 s debe poder detenerse (WCAG 2.2.2).
+const reducirMovimiento = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+const CLAVE_PAUSA = "cafe.video.pausado";
+const leerPausa = () => { try { return localStorage.getItem(CLAVE_PAUSA) === "1"; } catch { return false; } };
+const guardarPausa = (valor) => { try { localStorage.setItem(CLAVE_PAUSA, valor ? "1" : "0"); } catch { /* sin almacenamiento */ } };
+export function videoFondo(nombre, clase = "") {
+  const video = h("video", { class: "video-fondo", poster: `media/${nombre}.jpg`, playsinline: true, loop: true, preload: "auto", "aria-hidden": "true", tabindex: "-1" },
+    h("source", { src: `media/${nombre}.mp4`, type: "video/mp4" }));
+  video.muted = true;
+  video.defaultMuted = true;
+  const boton = h("button", { type: "button", class: "video-control", "aria-label": "Pausar animación" });
+  const pintar = () => {
+    const pausado = video.paused;
+    boton.replaceChildren(icono(pausado ? "reproducir" : "pausa"));
+    boton.setAttribute("aria-label", pausado ? "Reproducir animación" : "Pausar animación");
+  };
+  boton.addEventListener("click", () => {
+    const pausar = !video.paused;
+    guardarPausa(pausar);
+    if (pausar) video.pause(); else video.play();
+  });
+  video.addEventListener("play", pintar);
+  video.addEventListener("pause", pintar);
+  if (!reducirMovimiento() && !leerPausa()) {
+    video.autoplay = true;
+    video.play?.().catch(() => pintar());
+  }
+  pintar();
+  return h("div", { class: `video-capa ${clase}` }, video, boton);
+}
+
 // ---------- Ayuda contextual ----------
 // Signo de ayuda junto a un término: muestra la explicación al pasar el cursor, al enfocarlo o al tocarlo.
 export const ayudaTermino = (texto) =>
