@@ -74,7 +74,7 @@ export function vistaLogin() {
   return h("div", { class: "login" },
     videoFondo("cafe-inicio", "video-login"),
     h("section", { class: "login-arte" },
-      h("div", { class: "marca" }, h("div", { class: "marca-logo" }, icono("grano")),
+      h("div", { class: "marca" }, h("img", { class: "marca-logo", src: "media/logo.svg", alt: "", width: "248", height: "156" }),
         h("div", {}, h("div", { class: "marca-nombre" }, "Café Exportación"), h("div", { class: "marca-sub" }, "RiTech SAS"))),
       h("div", {}, h("h1", {}, "Del grano al puerto, todo en un solo lugar."),
         h("p", {}, "Gestiona productos, proveedores, clientes, exportaciones e inventario de café y cacao hacia la Unión Europea."))),

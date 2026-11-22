@@ -81,7 +81,7 @@ function layout() {
       : h("a", { href: `#${m.ruta}`, dataset: { ruta: m.ruta } }, icono(m.icono), m.texto)));
   app.append(
     h("aside", { class: "lateral" },
-      h("div", { class: "marca" }, h("div", { class: "marca-logo" }, icono("grano")),
+      h("div", { class: "marca" }, h("img", { class: "marca-logo", src: "media/logo.svg", alt: "", width: "248", height: "156" }),
         h("div", {}, h("div", { class: "marca-nombre" }, "Café Exportación"), h("div", { class: "marca-sub" }, "RiTech SAS"))),
       menu,
       h("div", { class: "lateral-pie" },

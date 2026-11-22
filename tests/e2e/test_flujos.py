@@ -410,3 +410,17 @@ def test_pantallas_internas_usan_crema_y_dejan_ver_el_video(pagina):
     assert opacidades and max(opacidades) <= 0.5, f"El velo tapa demasiado el video: {velo}"
     panel = pagina.evaluate("getComputedStyle(document.querySelector('.principal .encabezado')).backgroundColor")
     assert panel not in ("rgba(0, 0, 0, 0)", "transparent"), "El título no tiene panel para leerse sobre el video"
+
+
+def test_logo_de_granos_carga_en_inicio_menu_y_pestana(pagina):
+    logo_inicio = pagina.locator(".login-arte .marca-logo")
+    expect(logo_inicio).to_have_attribute("src", "media/logo.svg")
+    pagina.wait_for_function("document.querySelector('.login-arte .marca-logo').naturalWidth > 0")
+    icono = pagina.evaluate("document.querySelector('link[rel=icon]').getAttribute('href')")
+    assert icono == "media/icono.svg"
+    respuesta = pagina.request.get(pagina.url.split("#")[0] + icono)
+    assert respuesta.ok and "<svg" in respuesta.text()
+    iniciar_sesion(pagina, *ADMIN)
+    pagina.wait_for_function("document.querySelector('.lateral .marca-logo')?.naturalWidth > 0")
+    ancho = pagina.evaluate("document.querySelector('.lateral .marca-logo').getBoundingClientRect().width")
+    assert ancho >= 150, f"El logo del menú se ve muy pequeño: {ancho}px"
