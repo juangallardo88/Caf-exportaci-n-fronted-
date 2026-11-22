@@ -2,6 +2,7 @@
 import re
 import uuid
 
+import pytest
 from playwright.sync_api import expect
 
 from tests.e2e.conftest import capturar, iniciar_sesion
@@ -653,3 +654,81 @@ def test_si_el_clima_falla_el_dashboard_sigue_y_ofrece_reintentar(pagina):
     expect(clima).to_contain_text("No se pudo consultar el clima")
     expect(clima.get_by_role("button", name="Reintentar")).to_be_visible()
     expect(pagina.locator(".mapa-rutas")).to_be_visible()
+
+
+# --- Política de seguridad de contenido (CSP) de vercel.json ---
+VIGILAR_CSP = """
+window.__violaciones = [];
+document.addEventListener('securitypolicyviolation', (e) =>
+  window.__violaciones.push(e.violatedDirective + ' -> ' + (e.blockedURI || 'inline')));
+"""
+
+
+@pytest.fixture
+def pagina_con_csp(navegador, servidores, web_con_cabeceras):
+    contexto = navegador.new_context(viewport={"width": 1440, "height": 900})
+    contexto.add_init_script(f"window.__API_URL__ = '{servidores['api']}'")
+    contexto.add_init_script(VIGILAR_CSP)
+    contexto.set_default_timeout(10_000)
+    pagina = contexto.new_page()
+    simular_clima(pagina)
+    respuesta = pagina.goto(web_con_cabeceras + "/#/login")
+    pagina.respuesta_inicial = respuesta
+    yield pagina
+    contexto.close()
+
+
+def violaciones(pagina):
+    return pagina.evaluate("window.__violaciones")
+
+
+def test_vercel_envia_politica_de_seguridad_estricta(pagina_con_csp):
+    csp = pagina_con_csp.respuesta_inicial.headers["content-security-policy"]
+    script_src = next(d for d in csp.split(";") if d.strip().startswith("script-src"))
+    assert "'unsafe-inline'" not in script_src and "'unsafe-eval'" not in script_src
+    assert "frame-ancestors 'none'" in csp
+    assert "object-src 'none'" in csp
+    assert "https://api.open-meteo.com" in csp
+
+
+def test_la_app_completa_funciona_con_la_politica_de_seguridad(pagina_con_csp):
+    pagina = pagina_con_csp
+    expect(pagina.locator(".estado-servidor")).to_have_text("Servidor listo")
+    iniciar_sesion(pagina, *ADMIN)
+    expect(pagina.locator(".mapa-rutas")).to_be_visible()
+    expect(pagina.locator(".clima-puerto")).to_have_count(4)  # Open-Meteo permitido en connect-src
+    # Fuentes, estilos e imágenes propias cargan
+    assert pagina.evaluate("getComputedStyle(document.querySelector('.tarjeta')).borderRadius") != "0px"
+    ir(pagina, "/exportaciones/2")
+    expect(pagina.get_by_role("region", name="Seguimiento del embarque")).to_be_visible()
+    pagina.evaluate("() => { window.print = () => {}; }")
+    pagina.get_by_role("button", name="Hoja de embarque (PDF)").click()
+    expect(pagina.locator(".hoja-impresion img")).to_have_js_property("complete", True)
+    ir(pagina, "/productos")
+    pagina.get_by_label("Buscar").first.fill("zzzz-no-existe")
+    expect(pagina.locator(".vacio-buscar .ilustracion svg")).to_be_visible()
+    pagina.keyboard.press("Control+k")
+    expect(pagina.get_by_role("dialog", name="Búsqueda rápida")).to_be_visible()
+    assert violaciones(pagina) == []
+
+
+def test_la_politica_bloquea_un_script_inyectado(pagina_con_csp):
+    pagina = pagina_con_csp
+    pagina.evaluate("""() => {
+        const s = document.createElement('script');
+        s.textContent = 'window.__inyectado = true';
+        document.body.append(s);
+    }""")
+    assert pagina.evaluate("window.__inyectado") is None
+    assert any(v.startswith("script-src") for v in violaciones(pagina))
+
+
+def test_la_politica_bloquea_estilos_inyectados(pagina_con_csp):
+    pagina = pagina_con_csp
+    pagina.evaluate("""() => {
+        const s = document.createElement('style');
+        s.textContent = 'body { display: none !important; }';
+        document.head.append(s);
+    }""")
+    expect(pagina.locator("body")).to_be_visible()
+    assert any(v.startswith("style-src") for v in violaciones(pagina))

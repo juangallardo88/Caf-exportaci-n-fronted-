@@ -102,3 +102,47 @@ def iniciar_sesion(pagina, correo, clave):
 def capturar(pagina, nombre):
     CAPTURAS.mkdir(parents=True, exist_ok=True)
     pagina.screenshot(path=str(CAPTURAS / f"{nombre}.png"), full_page=True)
+
+
+def cabeceras_de_vercel(api: str) -> dict:
+    """Las cabeceras de seguridad de vercel.json, ajustadas para servir en local.
+
+    connect-src agrega el backend local y se quita upgrade-insecure-requests, que en local
+    convertiría a https las llamadas a http://127.0.0.1. Todo lo demás queda igual que en producción.
+    """
+    import json
+    from urllib.parse import urlparse
+
+    config = json.loads((RAIZ_FRONTEND / "vercel.json").read_text(encoding="utf-8"))
+    cabeceras = {c["key"]: c["value"] for bloque in config["headers"] for c in bloque["headers"]}
+    origen_api = "{0.scheme}://{0.netloc}".format(urlparse(api))
+    directivas = [d.strip() for d in cabeceras["Content-Security-Policy"].split(";")]
+    directivas = [f"{d} {origen_api}" if d.startswith("connect-src") else d
+                  for d in directivas if d != "upgrade-insecure-requests"]
+    cabeceras["Content-Security-Policy"] = "; ".join(directivas)
+    return cabeceras
+
+
+@pytest.fixture(scope="session")
+def web_con_cabeceras(servidores):
+    """El frontend servido con las mismas cabeceras de seguridad que pone Vercel."""
+    import functools
+    import threading
+    from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+    cabeceras = cabeceras_de_vercel(servidores["api"])
+
+    class Manejador(SimpleHTTPRequestHandler):
+        def end_headers(self):
+            for clave, valor in cabeceras.items():
+                self.send_header(clave, valor)
+            super().end_headers()
+
+        def log_message(self, *args):
+            pass
+
+    servidor = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Manejador, directory=str(RAIZ_FRONTEND)))
+    hilo = threading.Thread(target=servidor.serve_forever, daemon=True)
+    hilo.start()
+    yield f"http://127.0.0.1:{servidor.server_address[1]}"
+    servidor.shutdown()
