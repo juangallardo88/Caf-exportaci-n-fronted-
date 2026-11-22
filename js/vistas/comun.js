@@ -6,7 +6,7 @@ import { encabezado, errorPagina, h, retrasar, tabla, tablaCargando } from "../u
  * filtros: [{ nombre, etiqueta, tipo: "busqueda" | "select" | "date", opciones, placeholder }]
  * cargar(valores) → filas · columnas(recargar) → definición de columnas
  */
-export function crearListado({ titulo, descripcion, acciones = [], filtros = [], cargar, columnas, alClic, vacio }) {
+export function crearListado({ titulo, descripcion, acciones = [], filtros = [], cargar, columnas, alClic, vacio, iniciales = {} }) {
   const contenedorTabla = h("div", {});
   const controles = {};
 
@@ -33,6 +33,7 @@ export function crearListado({ titulo, descripcion, acciones = [], filtros = [],
     } else {
       control = h("input", { id: `filtro-${f.nombre}`, type: "search", placeholder: f.placeholder || "Buscar…", oninput: recargarConPausa });
     }
+    if (iniciales[f.nombre]) control.value = iniciales[f.nombre];
     controles[f.nombre] = control;
     return h("div", { class: `campo ${f.tipo === "busqueda" ? "campo-busqueda" : ""}` }, h("label", { for: control.id }, f.etiqueta), control);
   })) : null;

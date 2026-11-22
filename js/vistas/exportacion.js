@@ -1,9 +1,10 @@
 // HU-18 (productos), HU-20 (detalle), HU-21 (estado), HU-22 (fechas) y HU-23 (transporte).
 import { api } from "../api.js";
+import { ESTADOS_EXPLICADOS, INCOTERMS, TERMINOS } from "../glosario.js";
 import { icono } from "../iconos.js";
 import { puedeEditar } from "../sesion.js";
 import {
-  ESTADOS_EXPORTACION, avisar, boton, botonIcono, confirmar, fecha, formulario, h, insigniaExportacion, moneda, numero, tabla,
+  ESTADOS_EXPORTACION, avisar, ayudaTermino, boton, botonIcono, confirmar, fecha, formulario, h, insigniaExportacion, moneda, numero, tabla,
 } from "../ui.js";
 
 const FLUJO = ["BORRADOR", "CONFIRMADA", "EN_TRANSITO", "ENTREGADA"];
@@ -122,9 +123,27 @@ export async function vistaExportacion({ id, recargar }) {
       h("div", { class: "dato" }, h("dt", {}, "Contenedor"), h("dd", { class: "mono" }, t.numero_contenedor || "—")))
       : h("p", { class: "secundario" }, "Sin transporte registrado");
 
-  const avisoTransito = e.estado === "CONFIRMADA" && !t
-    ? h("div", { class: "alerta-caja aviso-amarillo", style: "margin-bottom:20px" }, icono("info"),
-      h("div", {}, "Registra el transporte para poder marcar la exportación en tránsito."))
+  // --- Qué significa el estado actual y cuál es el siguiente paso ---
+  const siguientePaso = {
+    BORRADOR: e.productos.length
+      ? "Revisa productos, costos y fechas. Cuando todo esté listo, pulsa «Confirmar exportación»: el inventario se descontará en ese momento."
+      : "Agrega al menos un producto en la sección Productos. Después podrás confirmar la exportación.",
+    CONFIRMADA: t
+      ? "Cuando la carga salga del puerto, pulsa «Marcar en tránsito»."
+      : "Registra el transporte (empresa y número de guía) en la sección Transporte. Es obligatorio para marcarla en tránsito.",
+    EN_TRANSITO: e.fecha_estimada_llegada
+      ? `Llegada estimada el ${fecha(e.fecha_estimada_llegada)}. Cuando el cliente confirme que la recibió, pulsa «Marcar entregada».`
+      : "Registra la fecha estimada de llegada y, cuando el cliente confirme que la recibió, pulsa «Marcar entregada».",
+    ENTREGADA: "No requiere más acciones.",
+  }[e.estado];
+  const pendienteTransporte = e.estado === "CONFIRMADA" && !t;
+  // Quien solo consulta (auditor) ve qué significa el estado, sin instrucciones que no puede ejecutar.
+  const queSigue = ESTADOS_EXPLICADOS[e.estado] && e.estado !== "CANCELADA"
+    ? h("div", { class: `que-sigue${pendienteTransporte ? " que-sigue-aviso" : ""}`, role: "note" }, icono(pendienteTransporte ? "alerta" : "info"),
+      h("div", {}, h("div", { class: "que-sigue-estado" }, ESTADOS_EXPLICADOS[e.estado]),
+        puedeEditar() || e.estado === "ENTREGADA"
+          ? h("div", {}, h("strong", {}, e.estado === "ENTREGADA" ? "Proceso terminado. " : "Siguiente paso: "), siguientePaso)
+          : null))
     : null;
 
   return h("div", {},
@@ -135,14 +154,15 @@ export async function vistaExportacion({ id, recargar }) {
       h("p", {}, `${e.cliente} · ${e.pais_destino} · creada el ${fecha(e.creado_en)}`)),
       h("div", { style: "display:flex;gap:10px;flex-wrap:wrap" }, acciones)),
     pasos(e.estado),
-    avisoTransito,
+    queSigue,
     h("div", { class: "rejilla rejilla-detalle" },
       h("div", { class: "rejilla" },
         tarjeta("Datos de la exportación", h("dl", { class: "datos" },
           h("div", { class: "dato" }, h("dt", {}, "Cliente"), h("dd", {}, e.cliente)),
           h("div", { class: "dato" }, h("dt", {}, "País de destino"), h("dd", {}, e.pais_destino)),
           h("div", { class: "dato" }, h("dt", {}, "Puerto de salida"), h("dd", {}, e.puerto_salida)),
-          h("div", { class: "dato" }, h("dt", {}, "Incoterm"), h("dd", {}, e.incoterm)))),
+          h("div", { class: "dato" }, h("dt", {}, "Incoterm", ayudaTermino(TERMINOS.incoterm)),
+            h("dd", {}, `${e.incoterm} · ${INCOTERMS[e.incoterm]?.[0] || ""}`, h("div", { class: "secundario" }, INCOTERMS[e.incoterm]?.[1] || ""))))),
         h("div", { class: "tarjeta" },
           h("div", { class: "tarjeta-titulo" }, h("h2", {}, "Productos"), h("span", {}, e.productos.length === 1 ? "1 referencia" : `${e.productos.length} referencias`)),
           h("div", { style: "margin-top:12px" }, tablaProductos), formProducto),

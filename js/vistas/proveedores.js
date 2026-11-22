@@ -1,5 +1,6 @@
 // HU-09 a HU-12: registrar, consultar, editar y eliminar proveedores.
 import { api } from "../api.js";
+import { TERMINOS } from "../glosario.js";
 import { puedeEditar } from "../sesion.js";
 import { abrirModal, avisar, boton, botonIcono, confirmar, formulario, h } from "../ui.js";
 import { crearListado, opcionesPaises } from "./comun.js";
@@ -52,7 +53,7 @@ export async function vistaProveedores() {
     cargar: (f) => api.get("/proveedores", f),
     vacio: "No hay proveedores con esos filtros",
     columnas: (recargar) => [
-      { titulo: "NIT / RUT", render: (p) => h("span", { class: "mono" }, p.nit) },
+      { titulo: "NIT / RUT", ayuda: TERMINOS.nit, render: (p) => h("span", { class: "mono" }, p.nit) },
       { titulo: "Razón social", principal: true, render: (p) => h("div", {}, h("div", { class: "fuerte" }, p.razon_social), h("div", { class: "secundario" }, p.direccion)) },
       { titulo: "País", campo: "pais" },
       { titulo: "Contacto", render: (p) => h("div", {}, h("div", {}, p.telefono), h("div", { class: "secundario" }, p.correo)) },

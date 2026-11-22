@@ -16,6 +16,7 @@ import { vistaInventario } from "./vistas/inventario.js";
 import { vistaReportes } from "./vistas/reportes.js";
 import { vistaUsuarios } from "./vistas/usuarios.js";
 import { vistaBusqueda } from "./vistas/busqueda.js";
+import { vistaGuia } from "./vistas/guia.js";
 
 const RUTAS = [
   { patron: /^\/dashboard$/, vista: vistaDashboard },
@@ -29,6 +30,7 @@ const RUTAS = [
   { patron: /^\/reportes$/, vista: vistaReportes, permitido: puedeVerReportes },
   { patron: /^\/usuarios$/, vista: vistaUsuarios, permitido: esAdmin },
   { patron: /^\/buscar$/, vista: vistaBusqueda },
+  { patron: /^\/guia$/, vista: vistaGuia },
 ];
 
 const MENU = [
@@ -44,6 +46,8 @@ const MENU = [
   { grupo: "Administración", visible: () => puedeVerReportes() },
   { ruta: "/reportes", texto: "Reportes", icono: "documento", visible: puedeVerReportes },
   { ruta: "/usuarios", texto: "Usuarios", icono: "escudo", visible: esAdmin },
+  { grupo: "Ayuda" },
+  { ruta: "/guia", texto: "Guía de uso", icono: "info" },
 ];
 
 const raiz = document.getElementById("raiz");

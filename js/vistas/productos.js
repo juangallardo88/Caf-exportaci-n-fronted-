@@ -1,5 +1,6 @@
 // HU-04 a HU-08: registrar, consultar, editar, eliminar productos y consultar disponibilidad.
 import { api } from "../api.js";
+import { TERMINOS } from "../glosario.js";
 import { puedeEditar } from "../sesion.js";
 import { abrirModal, avisar, boton, botonIcono, confirmar, formulario, h, insigniaStock, moneda, numero } from "../ui.js";
 import { crearListado } from "./comun.js";
@@ -58,7 +59,7 @@ export async function vistaProductos() {
     cargar: (f) => api.get("/productos", f),
     vacio: "No hay productos con esos filtros",
     columnas: (recargar) => [
-      { titulo: "SKU", render: (p) => h("span", { class: "mono" }, p.sku) },
+      { titulo: "SKU", ayuda: TERMINOS.sku, render: (p) => h("span", { class: "mono" }, p.sku) },
       { titulo: "Producto", principal: true, render: (p) => h("div", {}, h("div", { class: "fuerte" }, p.nombre), h("div", { class: "secundario" }, p.descripcion || "")) },
       { titulo: "Categoría", render: (p) => (p.categoria === "CAFE" ? "Café" : "Cacao") },
       { titulo: "Precio", clase: "num", render: (p) => moneda(p.precio) },

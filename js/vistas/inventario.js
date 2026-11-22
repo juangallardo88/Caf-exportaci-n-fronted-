@@ -36,10 +36,10 @@ function abrirAjustes(fila, recargar) {
   }, { alCancelar: cerrar }), { pequeno: true });
 }
 
-export async function vistaInventario() {
+export async function vistaInventario({ params } = {}) {
   const editar = puedeEditar();
-  let pestana = "inventario";
-  let soloBajo = false;
+  let pestana = params?.get("vista") === "bajo" ? "bajo" : "inventario";
+  let soloBajo = pestana === "bajo";
   const zona = h("div", {});
   const pestanas = h("div", { class: "pestanas", role: "tablist" });
   let productos = [];

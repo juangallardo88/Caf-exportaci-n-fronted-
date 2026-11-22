@@ -95,6 +95,11 @@ export function confirmar(mensaje, { titulo = "Confirmar", textoBoton = "Confirm
   });
 }
 
+// ---------- Ayuda contextual ----------
+// Signo de ayuda junto a un término: muestra la explicación al pasar el cursor, al enfocarlo o al tocarlo.
+export const ayudaTermino = (texto) =>
+  h("span", { class: "termino-ayuda", tabindex: "0", role: "img", "aria-label": `Qué significa: ${texto}`, dataset: { ayuda: texto } }, "?");
+
 // ---------- Tabla ----------
 /** columnas: [{ titulo, campo | render(fila), clase }] */
 export function tabla(columnas, filas, { alClic, vacio = "No hay registros todavía" } = {}) {
@@ -106,7 +111,7 @@ export function tabla(columnas, filas, { alClic, vacio = "No hay registros todav
           c.render ? c.render(fila) : fila[c.campo] ?? "—"))))
     : [h("tr", {}, h("td", { colspan: columnas.length }, h("div", { class: "vacio" }, icono("caja"), h("div", {}, vacio))))];
   return h("div", { class: "tabla-contenedor" },
-    h("table", {}, h("thead", {}, h("tr", {}, columnas.map((c) => h("th", { class: c.clase || "" }, c.titulo)))), h("tbody", {}, cuerpo)));
+    h("table", {}, h("thead", {}, h("tr", {}, columnas.map((c) => h("th", { class: c.clase || "" }, c.titulo, c.ayuda ? ayudaTermino(c.ayuda) : null)))), h("tbody", {}, cuerpo)));
 }
 
 export function tablaCargando(columnas = 5, filas = 5) {

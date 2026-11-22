@@ -1,4 +1,5 @@
 """Pruebas automatizadas de interfaz (end-to-end): el navegador recorre los flujos reales del usuario."""
+import re
 import uuid
 
 from playwright.sync_api import expect
@@ -271,3 +272,68 @@ def test_tablas_siguen_como_tabla_en_escritorio(pagina):
     ir(pagina, "/productos")
     expect(pagina.locator(".tabla-contenedor thead")).to_be_visible()
     assert pagina.locator(".tabla-contenedor tbody tr").first.evaluate("e => getComputedStyle(e).display") == "table-row"
+
+
+# ---------- Paquete Claridad: pendientes, siguiente paso, ayudas y guía ----------
+
+def test_dashboard_muestra_pendientes_y_explica_indicadores(pagina):  # HU-27
+    iniciar_sesion(pagina, *ADMIN)
+    panel = pagina.locator(".tarjeta", has=pagina.get_by_role("heading", name="Qué requiere atención"))
+    expect(panel).to_be_visible()
+    expect(panel.locator(".pendiente").first).to_be_visible()
+    expect(pagina.locator(".kpi-explicacion")).to_have_count(4)
+    capturar(pagina, "10-pendientes")
+
+
+def test_pendiente_de_stock_bajo_abre_la_pestana_filtrada(pagina):  # HU-26 + HU-27
+    iniciar_sesion(pagina, *ADMIN)
+    pagina.get_by_role("link", name="Ver productos").click()
+    expect(pagina.locator("h1")).to_have_text("Inventario")
+    expect(pagina.get_by_role("tab", name="Stock bajo")).to_have_attribute("aria-selected", "true")
+
+
+def test_enlace_filtrado_abre_exportaciones_por_estado(pagina):  # HU-17
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/exportaciones?estado=BORRADOR")
+    expect(pagina.locator("#filtro-estado")).to_have_value("BORRADOR")
+    expect(pagina.locator(".tabla-contenedor tbody tr").first.get_by_text("Borrador")).to_be_visible()
+
+
+def test_detalle_explica_el_estado_y_el_siguiente_paso(pagina):  # HU-20 + HU-21
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/exportaciones/4")
+    recuadro = pagina.locator(".que-sigue")
+    expect(recuadro).to_contain_text("aún no descuenta inventario")
+    expect(recuadro).to_contain_text("Siguiente paso")
+    expect(recuadro).to_contain_text("Confirmar exportación")
+    ayuda = pagina.locator(".dato .termino-ayuda").first
+    expect(ayuda).to_have_attribute("data-ayuda", re.compile("Regla internacional"))
+    expect(pagina.get_by_text("Entregado con derechos pagados")).to_be_visible()
+
+
+def test_auditor_ve_el_estado_sin_instrucciones(pagina):  # HU-03 + HU-20
+    iniciar_sesion(pagina, *AUDITOR)
+    ir(pagina, "/exportaciones/3")
+    recuadro = pagina.locator(".que-sigue")
+    expect(recuadro).to_contain_text("descontaron del inventario")
+    expect(recuadro).not_to_contain_text("Siguiente paso")
+
+
+def test_formulario_explica_el_incoterm_elegido(pagina):  # HU-17
+    iniciar_sesion(pagina, *OPERADOR)
+    ir(pagina, "/exportaciones")
+    pagina.get_by_role("button", name="Nueva exportación").click()
+    ayuda = pagina.locator("#campo-incoterm").locator("xpath=ancestor::div[contains(@class,'campo')]").locator(".ayuda")
+    expect(ayuda).to_contain_text("Regla internacional")
+    pagina.select_option("#campo-incoterm", "CIF")
+    expect(ayuda).to_contain_text("paga el flete y el seguro hasta el puerto de destino")
+
+
+def test_guia_de_uso_explica_proceso_roles_y_terminos(pagina):
+    iniciar_sesion(pagina, *OPERADOR)
+    pagina.locator(".menu").get_by_role("link", name="Guía de uso").click()
+    expect(pagina.locator("h1")).to_have_text("Guía de uso")
+    expect(pagina.locator(".recorrido-paso")).to_have_count(6)
+    expect(pagina.locator(".columna-propia")).to_have_text("Operador")
+    expect(pagina.locator(".lista-terminos").first).to_contain_text("Franco a bordo")
+    capturar(pagina, "11-guia")
