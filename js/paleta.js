@@ -1,5 +1,6 @@
 // Búsqueda rápida (Ctrl + K): saltar a cualquier pantalla, registro o acción sin usar el ratón.
 import { api } from "./api.js";
+import { grano } from "./ilustraciones.js";
 import { icono } from "./iconos.js";
 import { puedeEditar } from "./sesion.js";
 import { h, insigniaExportacion } from "./ui.js";
@@ -53,7 +54,7 @@ export function abrirPaleta(menu) {
           h("span", { class: "paleta-texto" }, h("span", { class: "fuerte" }, op.texto), h("span", { class: "secundario" }, op.detalle)),
           op.extra || null);
         }))));
-    if (!opciones.length) lista.append(h("div", { class: "paleta-vacio" }, "Sin coincidencias. Prueba con otra palabra."));
+    if (!opciones.length) lista.append(h("div", { class: "paleta-vacio" }, grano("buscar", 56), h("span", {}, "Sin coincidencias. Prueba con otra palabra.")));
     estado.textContent = opciones.length ? `${opciones.length} resultado(s)` : "Sin resultados";
     marcar(0);
   };

@@ -561,3 +561,95 @@ def test_auditor_no_ve_acciones_en_la_busqueda_rapida(pagina):
     expect(dialogo.get_by_role("group", name="Acciones")).to_have_count(0)
     pagina.keyboard.press("Escape")
     expect(dialogo).to_have_count(0)
+
+
+def test_hoja_de_embarque_se_imprime_sin_el_resto_de_la_app(pagina):  # HU-20
+    iniciar_sesion(pagina, *AUDITOR)  # cualquier rol puede sacar la hoja
+    ir(pagina, "/exportaciones/2")
+    expect(pagina.locator("h1")).to_have_text("EXP-2026-0002")
+    pagina.evaluate("() => { window.__impresiones = 0; window.print = () => { window.__impresiones++; }; }")
+    pagina.get_by_role("button", name="Hoja de embarque (PDF)").click()
+    pagina.wait_for_function("window.__impresiones === 1")
+    expect(pagina).to_have_title("Hoja de embarque EXP-2026-0002")
+    pagina.emulate_media(media="print")
+    hoja = pagina.get_by_role("article", name="Hoja de embarque EXP-2026-0002")
+    expect(hoja).to_be_visible()
+    expect(hoja).to_contain_text("Antwerp Cocoa Traders BV")
+    expect(hoja).to_contain_text("Cartagena, Colombia")
+    expect(hoja).to_contain_text("Recibí conforme")
+    expect(pagina.locator(".app")).to_be_hidden()
+    pagina.emulate_media(media="screen")
+    pagina.evaluate("window.dispatchEvent(new Event('afterprint'))")
+    expect(hoja).to_have_count(0)
+    expect(pagina).to_have_title(re.compile("Café Exportación"))
+
+
+def test_hoja_de_exportacion_cancelada_lleva_marca_de_agua(pagina):
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/exportaciones/5")
+    pagina.evaluate("() => { window.print = () => {}; }")
+    pagina.get_by_role("button", name="Hoja de embarque (PDF)").click()
+    expect(pagina.locator(".hoja-marca")).to_have_text("Cancelada")
+
+
+def test_tabla_sin_resultados_muestra_ilustracion_y_pista(pagina):
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/productos")
+    pagina.get_by_label("Buscar").first.fill("zzzz-no-existe")
+    vacio = pagina.locator(".vacio-buscar")
+    expect(vacio).to_contain_text("No hay productos con esos filtros")
+    expect(vacio).to_contain_text("quita algún filtro")
+    expect(vacio.locator(".ilustracion svg")).to_be_visible()
+
+
+def test_busqueda_global_sin_resultados_orienta_al_usuario(pagina):  # HU-29
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/buscar?q=zzzz-no-existe")
+    vacio = pagina.locator(".vacio-buscar")
+    expect(vacio).to_contain_text("No encontramos nada")
+    expect(vacio.get_by_role("link", name="Volver al inicio")).to_be_visible()
+
+
+CLIMA_TIERRA = {"3.88": (26.4, 63, 14, 27), "10.39": (31.2, 2, 22, 35), "11.24": (32.0, 0, 34, 48), "10.96": (29.1, 95, 28, 52)}
+
+
+def simular_clima(pagina, falla=False):
+    from urllib.parse import parse_qs, urlparse
+
+    def responder(ruta):
+        if falla:
+            return ruta.abort()
+        consulta = parse_qs(urlparse(ruta.request.url).query)
+        lats = consulta["latitude"][0].split(",")
+        if "marine" in ruta.request.url:
+            return ruta.fulfill(json=[{"current": {"wave_height": 1.5}} for _ in lats])
+        datos = []
+        for lat in lats:
+            t, codigo, viento, rafagas = CLIMA_TIERRA[lat]
+            datos.append({"current": {"time": "2026-11-22T11:45", "temperature_2m": t, "weather_code": codigo,
+                                      "wind_speed_10m": viento, "wind_gusts_10m": rafagas}})
+        return ruta.fulfill(json=datos)
+
+    pagina.route(re.compile(r"https://(marine-)?api\.open-meteo\.com/.*"), responder)
+
+
+def test_dashboard_muestra_clima_y_alerta_en_los_puertos(pagina):
+    simular_clima(pagina)
+    iniciar_sesion(pagina, *ADMIN)
+    clima = pagina.get_by_role("region", name="Clima en los puertos de salida")
+    expect(clima.locator(".clima-puerto")).to_have_count(4)
+    barranquilla = clima.locator(".clima-puerto", has_text="Barranquilla")
+    expect(barranquilla).to_have_class(re.compile("clima-alto"))
+    expect(barranquilla).to_contain_text("Tormenta: posible demora en el zarpe")
+    expect(clima.locator(".clima-puerto", has_text="Buenaventura")).to_contain_text("26 °C")
+    expect(clima.locator(".clima-puerto", has_text="Santa Marta")).to_have_class(re.compile("clima-medio"))
+    expect(clima).to_contain_text("Open-Meteo.com")
+
+
+def test_si_el_clima_falla_el_dashboard_sigue_y_ofrece_reintentar(pagina):
+    simular_clima(pagina, falla=True)
+    iniciar_sesion(pagina, *ADMIN)
+    clima = pagina.get_by_role("region", name="Clima en los puertos de salida")
+    expect(clima).to_contain_text("No se pudo consultar el clima")
+    expect(clima.get_by_role("button", name="Reintentar")).to_be_visible()
+    expect(pagina.locator(".mapa-rutas")).to_be_visible()

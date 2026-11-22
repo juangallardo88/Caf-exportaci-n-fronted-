@@ -2,6 +2,8 @@
 import { api } from "../api.js";
 import { barrasHorizontales, columnas } from "../graficas.js";
 import { mapaRutas } from "../mapa.js";
+import { climaPuertos } from "../clima.js";
+import { grano } from "../ilustraciones.js";
 import { icono } from "../iconos.js";
 import { puedeEditar, usuario } from "../sesion.js";
 import { ESTADOS_EXPORTACION, fecha, h, insigniaExportacion, moneda, numero, tabla } from "../ui.js";
@@ -65,7 +67,7 @@ function pendientes(d, enTransito) {
           h("div", { class: "pendiente-icono" }, icono(ic)),
           h("div", { class: "pendiente-texto" }, h("div", { class: "fuerte" }, titulo), h("div", { class: "secundario" }, detalle)),
           h("a", { class: "boton boton-chico", href: enlace }, accion))))
-    : h("div", { class: "pendientes-vacio" }, icono("check"), "Todo al día: no hay alertas de inventario ni exportaciones pendientes.");
+    : h("div", { class: "pendientes-vacio" }, grano("listo", 56), "Todo al día: no hay alertas de inventario ni exportaciones pendientes.");
   return h("div", { class: "tarjeta", style: "margin-bottom:20px" },
     h("div", { class: "tarjeta-titulo" }, h("h2", {}, "Qué requiere atención"),
       h("span", {}, filas.length ? plural(filas.length, "pendiente", "pendientes") : "Sin pendientes")),
@@ -94,7 +96,7 @@ export async function vistaDashboard() {
     h("div", { class: "tarjeta", style: "margin-bottom:20px" },
       h("div", { class: "tarjeta-titulo" }, h("h2", {}, "Rutas de exportación"),
         h("span", {}, "Del puerto colombiano al destino · grosor según el valor")),
-      h("div", { class: "tarjeta-cuerpo" }, mapaRutas(exportaciones, { formato: compacto, reducirMovimiento }))),
+      h("div", { class: "tarjeta-cuerpo" }, mapaRutas(exportaciones, { formato: compacto, reducirMovimiento }), climaPuertos(exportaciones))),
     h("div", { class: "rejilla rejilla-2", style: "margin-bottom:20px" },
       panel("Valor exportado por mes", "Confirmadas, en tránsito y entregadas",
         columnas(mesesContinuos(e.por_mes),

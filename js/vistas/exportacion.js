@@ -1,6 +1,7 @@
 // HU-18 (productos), HU-20 (detalle), HU-21 (estado), HU-22 (fechas) y HU-23 (transporte).
 import { api } from "../api.js";
 import { ESTADOS_EXPLICADOS, INCOTERMS, TERMINOS } from "../glosario.js";
+import { imprimirHoja } from "../hoja.js";
 import { icono } from "../iconos.js";
 import { puedeEditar } from "../sesion.js";
 import {
@@ -196,7 +197,9 @@ export async function vistaExportacion({ id, recargar }) {
       h("div", {}, h("div", { style: "display:flex;align-items:center;gap:12px;flex-wrap:wrap" },
         h("h1", {}, e.consecutivo), insigniaExportacion(e.estado)),
       h("p", {}, `${e.cliente} · ${e.pais_destino} · creada el ${fecha(e.creado_en)}`)),
-      h("div", { style: "display:flex;gap:10px;flex-wrap:wrap" }, acciones)),
+      h("div", { style: "display:flex;gap:10px;flex-wrap:wrap" },
+        boton("Hoja de embarque (PDF)", { icono: "documento", clase: "boton-sec", onclick: () => imprimirHoja(e) }),
+        acciones)),
     pasos(e.estado),
     queSigue,
     seguimiento(e),

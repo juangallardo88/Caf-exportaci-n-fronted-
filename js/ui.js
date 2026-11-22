@@ -1,5 +1,6 @@
 // Componentes de interfaz reutilizables. Todo el texto se inserta con textContent (sin riesgo de XSS).
 import { icono } from "./iconos.js";
+import { estadoVacio } from "./ilustraciones.js";
 
 /** Crea un elemento: h("button", { class: "boton", onclick }, "Texto", hijo) */
 export function h(etiqueta, atributos = {}, ...hijos) {
@@ -170,7 +171,7 @@ export function tabla(columnas, filas, { alClic, vacio = "No hay registros todav
     const desde = pagina * porPagina;
     const visibles = lista.slice(desde, desde + porPagina);
     cuerpo.replaceChildren(...(visibles.length ? visibles.map(fila)
-      : [h("tr", {}, h("td", { colspan: columnas.length }, h("div", { class: "vacio" }, icono("caja"), h("div", {}, vacio))))]));
+      : [h("tr", { class: "fila-vacia" }, h("td", { colspan: columnas.length }, estadoVacio(vacio)))]));
     encabezados.forEach((th, i) => {
       if (i === orden.indice) th.setAttribute("aria-sort", orden.asc ? "ascending" : "descending");
       else th.removeAttribute("aria-sort");

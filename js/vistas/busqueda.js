@@ -1,5 +1,6 @@
 // HU-29: búsqueda global.
 import { api } from "../api.js";
+import { estadoVacio } from "../ilustraciones.js";
 import { encabezado, h, insigniaExportacion } from "../ui.js";
 
 const grupo = (titulo, elementos, render) =>
@@ -10,6 +11,13 @@ export async function vistaBusqueda({ params }) {
   const q = params.get("q") || "";
   const r = await api.get("/busqueda", { q });
   const total = Object.values(r).reduce((n, lista) => n + lista.length, 0);
+  if (!total) {
+    return h("div", {},
+      encabezado(`Resultados para “${q}”`, "Sin coincidencias en todo el sistema"),
+      h("div", { class: "tarjeta" }, estadoVacio(`No encontramos nada con “${q}”`, {
+        pose: "buscar", pista: "Busca por consecutivo (EXP-2026-0001), cliente, producto, SKU, NIT o país.",
+        accion: h("a", { class: "boton boton-sec", href: "#/" }, "Volver al inicio") })));
+  }
   return h("div", {},
     encabezado(`Resultados para “${q}”`, `${total} coincidencia(s) en todo el sistema`),
     h("div", { class: "rejilla rejilla-2" },
