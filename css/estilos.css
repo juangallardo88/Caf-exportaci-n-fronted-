@@ -429,11 +429,6 @@ th .termino-ayuda::after { left: 0; transform: none; }
 /* ---------- Video de marca: inicio de sesión y fondo de las pantallas internas ---------- */
 .video-capa { position: relative; overflow: hidden; }
 .video-fondo { display: block; width: 100%; height: 100%; object-fit: cover; }
-.video-control { position: absolute; z-index: 2; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,248,238,.35);
-  background: rgba(30,18,12,.55); color: #FFF8EE; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(6px); }
-.video-control:hover { background: rgba(30,18,12,.8); }
-.video-control:focus-visible { outline: 2px solid var(--cobre-claro); outline-offset: 2px; }
-.video-control svg { width: 14px; height: 14px; fill: currentColor; stroke: none; }
 
 /* Inicio: el video ocupa toda la pantalla; el texto va sobre un degradado oscuro y el formulario en una tarjeta. */
 .login { position: relative; isolation: isolate; background: var(--espresso); }
@@ -442,7 +437,6 @@ th .termino-ayuda::after { left: 0; transform: none; }
 .login .login-formulario { place-items: center end; padding-right: clamp(32px, 5vw, 80px); }
 .video-login::after { content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(90deg, rgba(28,16,11,.9) 0%, rgba(28,16,11,.6) 34%, rgba(28,16,11,.12) 62%, rgba(28,16,11,.18) 100%); }
-.video-login .video-control { top: 20px; right: 20px; }
 .login-arte { background: none; pointer-events: none; }
 .login-arte > * { pointer-events: auto; }
 .login-arte h1 { text-shadow: 0 2px 24px rgba(0,0,0,.35); }
@@ -455,8 +449,6 @@ th .termino-ayuda::after { left: 0; transform: none; }
 .video-app { position: fixed; inset: 0 0 0 260px; z-index: 0; pointer-events: none; }
 .video-app .video-fondo { filter: blur(1.5px) saturate(1.05); transform: scale(1.03); }
 .video-app::after { content: ""; position: absolute; inset: 0; background: rgba(247, 242, 234, .70); }
-.principal > .video-control { position: fixed; right: 20px; bottom: 20px; z-index: 10;
-  background: rgba(43, 29, 20, .78); border-color: rgba(255,248,238,.25); box-shadow: var(--sombra); }
 .principal { position: relative; }
 .principal > .barra, .principal > .contenido { position: relative; z-index: 1; }
 .principal > .barra { background: rgba(247, 242, 234, .72); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }

@@ -66,9 +66,8 @@ async function cerrarSesion() {
 
 function layout() {
   const u = usuario();
-  // Video de fondo de las pantallas internas. Su botón de pausa va aparte, por encima del contenido.
+  // Video de fondo de las pantallas internas.
   const fondo = videoFondo("cafe-inicio", "video-app");
-  const controlVideo = fondo.querySelector(".video-control");
   const iniciales = u.nombre.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
   const app = h("div", { class: "app" });
   const busqueda = h("input", { type: "search", placeholder: "Buscar productos, clientes, proveedores, exportaciones…", "aria-label": "Búsqueda global" });
@@ -93,8 +92,7 @@ function layout() {
       h("header", { class: "barra" },
         h("button", { class: "boton boton-sec boton-menu", type: "button", "aria-label": "Abrir menú", onclick: () => app.classList.toggle("menu-abierto") }, icono("menu")),
         h("div", { class: "buscador" }, icono("buscar"), busqueda)),
-      h("main", { class: "contenido", id: "contenido" }),
-      controlVideo));
+      h("main", { class: "contenido", id: "contenido" })));
   app.addEventListener("click", (e) => {
     const fueraDelMenu = !e.target.closest(".lateral") && !e.target.closest(".boton-menu");
     if (e.target.closest(".menu a") || fueraDelMenu) app.classList.remove("menu-abierto");

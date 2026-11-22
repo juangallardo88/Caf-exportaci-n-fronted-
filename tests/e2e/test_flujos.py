@@ -355,7 +355,7 @@ def test_inicio_reproduce_el_video_de_marca(pagina):
     pagina.wait_for_function("document.querySelector('.video-login video').readyState >= 2")
     assert pagina.evaluate(VIDEO_AVANZA, ".video-login video"), "El video del inicio no se está reproduciendo"
     expect(pagina.locator(".video-login video")).to_have_js_property("muted", True)
-    expect(pagina.get_by_role("button", name="Pausar animación")).to_be_visible()
+    expect(pagina.locator(".video-control")).to_have_count(0)
 
 
 def test_video_de_fondo_sigue_al_cambiar_de_pantalla(pagina):
@@ -370,17 +370,15 @@ def test_video_de_fondo_sigue_al_cambiar_de_pantalla(pagina):
     assert pagina.evaluate(VIDEO_AVANZA, ".video-app video"), "El video de fondo no se está reproduciendo"
 
 
-def test_pausar_el_video_se_recuerda(pagina):
-    iniciar_sesion(pagina, *ADMIN)
-    pagina.get_by_role("button", name="Pausar animación").click()
-    expect(pagina.get_by_role("button", name="Reproducir animación")).to_be_visible()
-    assert pagina.evaluate("document.querySelector('.video-app video').paused")
+def test_video_de_fondo_no_tiene_boton_y_sigue_aunque_antes_se_hubiera_pausado(pagina):
+    # Quien pausó con la versión anterior no debe quedar con el video detenido.
+    pagina.evaluate("localStorage.setItem('cafe.video.pausado', '1')")
     pagina.reload()
-    expect(pagina.locator(".kpi-valor").first).to_be_visible()
-    expect(pagina.get_by_role("button", name="Reproducir animación")).to_be_visible()
-    assert pagina.evaluate("document.querySelector('.video-app video').paused")
-    pagina.get_by_role("button", name="Reproducir animación").click()
-    expect(pagina.get_by_role("button", name="Pausar animación")).to_be_visible()
+    iniciar_sesion(pagina, *ADMIN)
+    pagina.wait_for_function("document.querySelector('.video-app video').readyState >= 2")
+    assert pagina.evaluate(VIDEO_AVANZA, ".video-app video"), "El video quedó pausado por la preferencia antigua"
+    expect(pagina.locator(".video-control")).to_have_count(0)
+    assert pagina.evaluate("localStorage.getItem('cafe.video.pausado')") is None
 
 
 def test_con_movimiento_reducido_el_video_queda_quieto(pagina):
