@@ -398,3 +398,15 @@ def test_cifras_del_dashboard_caben_en_su_tarjeta(nueva_pagina):
         iniciar_sesion(pagina, *ADMIN)
         cortadas = pagina.evaluate("[...document.querySelectorAll('.kpi-valor')].filter((e) => e.scrollWidth > e.clientWidth).length")
         assert cortadas == 0, f"{cortadas} cifra(s) cortada(s) a {ancho}px"
+
+
+def test_pantallas_internas_usan_crema_y_dejan_ver_el_video(pagina):
+    iniciar_sesion(pagina, *ADMIN)
+    fondo_tarjeta = pagina.evaluate("getComputedStyle(document.querySelector('.principal .tarjeta')).backgroundColor")
+    r, g, b = [int(float(x)) for x in re.findall(r"[\d.]+", fondo_tarjeta)[:3]]
+    assert r + g + b < 3 * 240, f"Las tarjetas siguen casi blancas: {fondo_tarjeta}"
+    velo = pagina.evaluate("getComputedStyle(document.querySelector('.video-app'), '::after').backgroundImage")
+    opacidades = [float(x) for x in re.findall(r"rgba\([^)]*,\s*([\d.]+)\)", velo)]
+    assert opacidades and max(opacidades) <= 0.5, f"El velo tapa demasiado el video: {velo}"
+    panel = pagina.evaluate("getComputedStyle(document.querySelector('.principal .encabezado')).backgroundColor")
+    assert panel not in ("rgba(0, 0, 0, 0)", "transparent"), "El título no tiene panel para leerse sobre el video"
