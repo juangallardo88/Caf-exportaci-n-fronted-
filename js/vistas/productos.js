@@ -46,9 +46,9 @@ async function eliminar(producto, recargar) {
   } catch (err) { avisar(err.message, "error"); }
 }
 
-export async function vistaProductos() {
+export async function vistaProductos({ params } = {}) {
   const editar = puedeEditar();
-  return crearListado({
+  const listado = crearListado({
     titulo: "Productos",
     descripcion: "Catálogo de café y cacao con su disponibilidad",
     acciones: (recargar) => editar ? [boton("Nuevo producto", { icono: "mas", clase: "boton-acento", onclick: () => abrirFormulario(null, recargar) })] : [],
@@ -69,5 +69,11 @@ export async function vistaProductos() {
         botonIcono("editar", `Editar ${p.nombre}`, () => abrirFormulario(p, recargar)),
         botonIcono("basura", `Eliminar ${p.nombre}`, () => eliminar(p, recargar), "peligro")) }] : []),
     ],
-  }).vista;
+  });
+  // Desde la búsqueda rápida: #/productos?nuevo=1 abre el formulario de una vez.
+  if (params?.get("nuevo") === "1" && editar) {
+    history.replaceState(null, "", "#/productos");
+    setTimeout(() => abrirFormulario(null, listado.recargar), 0);
+  }
+  return listado.vista;
 }

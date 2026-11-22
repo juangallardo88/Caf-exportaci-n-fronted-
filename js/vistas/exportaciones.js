@@ -36,6 +36,11 @@ async function nuevaExportacion() {
 }
 
 export async function vistaExportaciones({ params } = {}) {
+  // Desde la búsqueda rápida: #/exportaciones?nueva=1 abre el formulario de una vez.
+  if (params?.get("nueva") === "1" && puedeEditar()) {
+    history.replaceState(null, "", "#/exportaciones");
+    setTimeout(nuevaExportacion, 0);
+  }
   return crearListado({
     iniciales: { estado: params?.get("estado") || "" },
     titulo: "Exportaciones",

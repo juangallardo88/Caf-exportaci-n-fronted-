@@ -495,3 +495,69 @@ def test_inicio_permite_ver_la_contrasena_y_marca_la_demo(pagina):  # HU-01
     pagina.get_by_role("button", name="Ocultar contraseña").click()
     expect(pagina.locator("#contrasena")).to_have_attribute("type", "password")
     expect(pagina.locator(".demo-etiqueta")).to_have_text("Modo demostración")
+
+
+# ---------- Mejoras nuevas: mapa de rutas, seguimiento del embarque y búsqueda rápida ----------
+
+def test_dashboard_muestra_mapa_de_rutas(pagina):  # HU-28
+    iniciar_sesion(pagina, *ADMIN)
+    mapa = pagina.locator(".mapa-rutas")
+    expect(mapa).to_be_visible()
+    assert mapa.locator(".mapa-arco").count() >= 1
+    # EXP-2026-0001 (entregada, Buenaventura → Alemania) no cambia durante las pruebas.
+    expect(mapa).to_have_attribute("aria-label", re.compile("Buenaventura a Alemania"))
+    leyenda = pagina.locator(".mapa-leyenda")
+    expect(leyenda).to_contain_text("Buenaventura → Alemania")
+    # Cada exportación en tránsito se marca en la leyenda.
+    en_transito = pagina.evaluate("document.querySelectorAll('.mapa-arco.en-transito').length")
+    assert leyenda.locator(".mapa-chip", has_text="En tránsito").count() == en_transito
+
+
+def test_detalle_en_transito_muestra_el_barco_en_la_ruta(pagina):  # HU-21 + HU-23
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/exportaciones/2")
+    trayecto = pagina.get_by_role("region", name="Seguimiento del embarque")
+    expect(trayecto).to_be_visible()
+    expect(trayecto).to_contain_text("Cartagena")
+    expect(trayecto).to_contain_text("Bélgica")
+    avance = int(trayecto.get_by_role("progressbar").get_attribute("aria-valuenow"))
+    assert 0 <= avance <= 100
+    expect(trayecto.locator(".trayecto-barco svg")).to_be_visible()
+
+
+def test_entregada_muestra_el_viaje_completo(pagina):
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/exportaciones/1")
+    trayecto = pagina.get_by_role("region", name="Seguimiento del embarque")
+    expect(trayecto.get_by_role("progressbar")).to_have_attribute("aria-valuenow", "100")
+    expect(trayecto).to_contain_text("Viaje de 26 días completado")
+
+
+def test_ctrl_k_busca_y_abre_un_registro(pagina):  # HU-29
+    iniciar_sesion(pagina, *ADMIN)
+    pagina.keyboard.press("Control+k")
+    dialogo = pagina.get_by_role("dialog", name="Búsqueda rápida")
+    expect(dialogo).to_be_visible()
+    pagina.keyboard.type("hamburg")
+    expect(dialogo.get_by_role("option", name=re.compile("EXP-2026-0001"))).to_be_visible()
+    pagina.keyboard.press("Enter")
+    expect(pagina.locator("h1")).to_have_text("EXP-2026-0001")
+    expect(dialogo).to_have_count(0)
+
+
+def test_ctrl_k_ejecuta_accion_nueva_exportacion(pagina):
+    iniciar_sesion(pagina, *OPERADOR)
+    pagina.get_by_role("button", name="Abrir búsqueda rápida (Ctrl + K)").click()
+    pagina.keyboard.type("nueva exportación")
+    pagina.keyboard.press("Enter")
+    expect(pagina.get_by_role("dialog", name="Nueva exportación")).to_be_visible()
+
+
+def test_auditor_no_ve_acciones_en_la_busqueda_rapida(pagina):
+    iniciar_sesion(pagina, *AUDITOR)
+    pagina.keyboard.press("Control+k")
+    dialogo = pagina.get_by_role("dialog", name="Búsqueda rápida")
+    expect(dialogo.get_by_role("group", name="Pantallas")).to_be_visible()
+    expect(dialogo.get_by_role("group", name="Acciones")).to_have_count(0)
+    pagina.keyboard.press("Escape")
+    expect(dialogo).to_have_count(0)

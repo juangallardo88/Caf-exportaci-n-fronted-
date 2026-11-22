@@ -40,6 +40,50 @@ function pasos(estado) {
     lista);
 }
 
+// --- Seguimiento visual del embarque: un barco sobre la ruta, ubicado según las fechas ---
+const DIA = 86400000;
+const soloFecha = (iso) => new Date(`${String(iso).slice(0, 10)}T00:00:00`);
+const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+const BARCO = '<svg viewBox="0 0 48 32" aria-hidden="true"><path d="M8 19h32l-5 9H13z" fill="#5E3016"/><path d="M14 19v-6h16v6" fill="#9A4F14"/>'
+  + '<rect x="17" y="9" width="5" height="4" fill="#C47A3E"/><rect x="23" y="9" width="5" height="4" fill="#C47A3E"/><path d="M22 9V3l7 4-7 2" fill="#B3261E"/>'
+  + '<path d="M4 29q4-3 8 0t8 0 8 0 8 0 8 0" stroke="#1F5FA8" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+
+function seguimiento(e, hoy = new Date()) {
+  if (!["CONFIRMADA", "EN_TRANSITO", "ENTREGADA"].includes(e.estado) || !e.fecha_embarque || !e.fecha_estimada_llegada) return null;
+  const hoyDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const salida = soloFecha(e.fecha_embarque), llegada = soloFecha(e.fecha_estimada_llegada);
+  const total = Math.max(1, Math.round((llegada - salida) / DIA));
+  let avance = 0, titulo, detalle, retraso = false;
+  if (e.estado === "ENTREGADA") {
+    avance = 1; titulo = "Entregada"; detalle = `Viaje de ${plural(total, "día", "días")} completado.`;
+  } else if (e.estado === "CONFIRMADA") {
+    const faltan = Math.round((salida - hoyDia) / DIA);
+    titulo = faltan > 0 ? `Zarpa en ${plural(faltan, "día", "días")}` : "Lista para zarpar";
+    detalle = faltan > 0 ? `Embarque previsto el ${fecha(e.fecha_embarque)}.` : "La fecha de embarque ya llegó; falta marcarla en tránsito.";
+  } else {
+    const transcurridos = Math.round((hoyDia - salida) / DIA);
+    avance = Math.min(1, Math.max(0, transcurridos / total));
+    const faltan = Math.round((llegada - hoyDia) / DIA);
+    if (faltan > 0) { titulo = `Faltan ${plural(faltan, "día", "días")}`; detalle = `Día ${Math.max(0, transcurridos)} de ${total} del viaje.`; }
+    else if (faltan === 0) { titulo = "Llega hoy"; detalle = `Día ${total} de ${total} del viaje.`; }
+    else { retraso = true; titulo = `Retrasada ${plural(-faltan, "día", "días")}`; detalle = `La llegada estaba prevista el ${fecha(e.fecha_estimada_llegada)}.`; }
+  }
+  const pct = (avance * 100).toFixed(1);
+  const barco = h("div", { class: "trayecto-barco", style: `left:${pct}%` });
+  barco.innerHTML = BARCO;
+  return h("section", { class: `tarjeta trayecto${retraso ? " trayecto-retraso" : ""}`, "aria-label": "Seguimiento del embarque" },
+    h("div", { class: "trayecto-cabecera" },
+      h("div", {}, h("div", { class: "trayecto-titulo" }, titulo), h("div", { class: "secundario" }, detalle)),
+      h("span", { class: "trayecto-pct" }, `${Math.round(avance * 100)} %`)),
+    h("div", { class: "trayecto-pista", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(Math.round(avance * 100)),
+      "aria-label": "Avance del viaje" },
+      h("div", { class: "trayecto-recorrido", style: `width:${pct}%` }), barco),
+    h("div", { class: "trayecto-extremos" },
+      h("div", {}, h("div", { class: "fuerte" }, e.puerto_salida), h("div", { class: "secundario" }, `Colombia · ${fecha(e.fecha_embarque)}`)),
+      h("div", { style: "text-align:right" }, h("div", { class: "fuerte" }, e.pais_destino),
+        h("div", { class: "secundario" }, `Llegada estimada · ${fecha(e.fecha_estimada_llegada)}`))));
+}
+
 export async function vistaExportacion({ id, recargar }) {
   const [e, productos] = await Promise.all([api.get(`/exportaciones/${id}`), api.get("/productos")]);
   const editable = puedeEditar() && !["ENTREGADA", "CANCELADA"].includes(e.estado);
@@ -155,6 +199,7 @@ export async function vistaExportacion({ id, recargar }) {
       h("div", { style: "display:flex;gap:10px;flex-wrap:wrap" }, acciones)),
     pasos(e.estado),
     queSigue,
+    seguimiento(e),
     h("div", { class: "rejilla rejilla-detalle" },
       h("div", { class: "rejilla" },
         tarjeta("Datos de la exportación", h("dl", { class: "datos" },

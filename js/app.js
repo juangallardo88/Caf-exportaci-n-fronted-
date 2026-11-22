@@ -17,6 +17,7 @@ import { vistaReportes } from "./vistas/reportes.js";
 import { vistaUsuarios } from "./vistas/usuarios.js";
 import { vistaBusqueda } from "./vistas/busqueda.js";
 import { vistaGuia } from "./vistas/guia.js";
+import { abrirPaleta } from "./paleta.js";
 
 const RUTAS = [
   { patron: /^\/dashboard$/, vista: vistaDashboard },
@@ -64,6 +65,16 @@ async function cerrarSesion() {
   avisar("Sesión cerrada");
 }
 
+const esMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+// Atajo global: Ctrl + K (⌘ + K en Mac) abre la búsqueda rápida cuando hay sesión.
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k" && document.querySelector(".app")) {
+    e.preventDefault();
+    abrirPaleta(MENU);
+  }
+});
+
 function layout() {
   const u = usuario();
   // Video de fondo de las pantallas internas.
@@ -91,7 +102,9 @@ function layout() {
       fondo,
       h("header", { class: "barra" },
         h("button", { class: "boton boton-sec boton-menu", type: "button", "aria-label": "Abrir menú", onclick: () => app.classList.toggle("menu-abierto") }, icono("menu")),
-        h("div", { class: "buscador" }, icono("buscar"), busqueda)),
+        h("div", { class: "buscador" }, icono("buscar"), busqueda,
+          h("button", { type: "button", class: "atajo", title: "Búsqueda rápida", "aria-label": "Abrir búsqueda rápida (Ctrl + K)", onclick: () => abrirPaleta(MENU) },
+            h("kbd", {}, esMac ? "⌘" : "Ctrl"), h("kbd", {}, "K")))),
       h("main", { class: "contenido", id: "contenido" })));
   app.addEventListener("click", (e) => {
     const fueraDelMenu = !e.target.closest(".lateral") && !e.target.closest(".boton-menu");

@@ -1,6 +1,7 @@
 // HU-27 (dashboard) y HU-28 (estadísticas).
 import { api } from "../api.js";
 import { barrasHorizontales, columnas } from "../graficas.js";
+import { mapaRutas } from "../mapa.js";
 import { icono } from "../iconos.js";
 import { puedeEditar, usuario } from "../sesion.js";
 import { ESTADOS_EXPORTACION, fecha, h, insigniaExportacion, moneda, numero, tabla } from "../ui.js";
@@ -76,8 +77,9 @@ const panel = (titulo, subtitulo, contenido) =>
     h("div", { class: "tarjeta-cuerpo" }, contenido));
 
 export async function vistaDashboard() {
-  const [d, e, enTransito] = await Promise.all([api.get("/dashboard"), api.get("/estadisticas"),
-    api.get("/exportaciones", { estado: "EN_TRANSITO" })]);
+  const [d, e, exportaciones] = await Promise.all([api.get("/dashboard"), api.get("/estadisticas"), api.get("/exportaciones")]);
+  const enTransito = exportaciones.filter((x) => x.estado === "EN_TRANSITO");
+  const reducirMovimiento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   const nombre = usuario().nombre.split(" ")[0];
 
   return h("div", {},
@@ -89,6 +91,10 @@ export async function vistaDashboard() {
       kpi("dinero", moneda(d.exportaciones.valor_exportado), "Valor exportado", "Total de exportaciones confirmadas, en tránsito y entregadas"),
       kpi("alerta", numero(d.inventario.bajo_stock), "Productos con stock bajo", "Están en su stock mínimo o por debajo", d.inventario.bajo_stock ? "kpi-alerta" : ""),
       kpi("usuarios", numero(d.clientes), "Clientes", `Compradores en el exterior · ${plural(d.proveedores, "proveedor", "proveedores")}`)),
+    h("div", { class: "tarjeta", style: "margin-bottom:20px" },
+      h("div", { class: "tarjeta-titulo" }, h("h2", {}, "Rutas de exportación"),
+        h("span", {}, "Del puerto colombiano al destino · grosor según el valor")),
+      h("div", { class: "tarjeta-cuerpo" }, mapaRutas(exportaciones, { formato: compacto, reducirMovimiento }))),
     h("div", { class: "rejilla rejilla-2", style: "margin-bottom:20px" },
       panel("Valor exportado por mes", "Confirmadas, en tránsito y entregadas",
         columnas(mesesContinuos(e.por_mes),
