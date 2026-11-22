@@ -1,6 +1,7 @@
-// HU-24 (consultar), HU-25 (actualizar cantidades) y HU-26 (bajo stock).
+// HU-24 (consultar), HU-25 (actualizar cantidades), HU-26 (bajo stock) y proyección de agotamiento.
 import { api } from "../api.js";
 import { icono } from "../iconos.js";
+import { tarjetaProyeccion } from "../proyeccion.js";
 import { puedeEditar } from "../sesion.js";
 import {
   abrirModal, avisar, boton, botonIcono, encabezado, errorPagina, formulario, h, insignia, insigniaStock, numero, tabla, tablaCargando,
@@ -38,7 +39,9 @@ function abrirAjustes(fila, recargar) {
 
 export async function vistaInventario({ params } = {}) {
   const editar = puedeEditar();
-  let pestana = params?.get("vista") === "bajo" ? "bajo" : "inventario";
+  const VISTAS = ["inventario", "bajo", "movimientos", "proyeccion"];
+  let pestana = VISTAS.includes(params?.get("vista")) ? params.get("vista") : "inventario";
+  let dias = 90;
   let soloBajo = pestana === "bajo";
   const zona = h("div", {});
   const pestanas = h("div", { class: "pestanas", role: "tablist" });
@@ -47,11 +50,20 @@ export async function vistaInventario({ params } = {}) {
   async function recargar() {
     zona.replaceChildren(h("div", { class: "tarjeta" }, tablaCargando(6)));
     pestanas.replaceChildren(
-      ...[["inventario", "Inventario"], ["bajo", "Stock bajo"], ["movimientos", "Movimientos"]].map(([clave, texto]) =>
+      ...[["inventario", "Inventario"], ["bajo", "Stock bajo"], ["movimientos", "Movimientos"], ["proyeccion", "Proyección"]].map(([clave, texto]) =>
         h("button", { type: "button", role: "tab", class: pestana === clave ? "activa" : "", "aria-selected": String(pestana === clave),
           onclick: () => { pestana = clave; soloBajo = clave === "bajo"; recargar(); } }, texto)));
     try {
-      productos = await api.get("/inventario");
+      if (pestana === "proyeccion") {
+        const [inventario, proyeccion] = await Promise.all([api.get("/inventario"), api.get("/inventario/proyeccion", { dias })]);
+        productos = inventario;
+        zona.replaceChildren(tarjetaProyeccion(proyeccion, { dias, alCambiar: (d) => { dias = d; recargar(); } }));
+        return;
+      }
+      // La proyección solo alimenta el aviso: si falla, el inventario se muestra igual.
+      const [inventario, proyeccion] = await Promise.all([api.get("/inventario"),
+        pestana === "inventario" ? api.get("/inventario/proyeccion").catch(() => []) : []]);
+      productos = inventario;
       if (pestana === "movimientos") {
         const movimientos = await api.get("/inventario/movimientos", { limite: 100 });
         zona.replaceChildren(h("div", { class: "tarjeta" }, tabla([
@@ -65,10 +77,18 @@ export async function vistaInventario({ params } = {}) {
         return;
       }
       const filas = soloBajo ? productos.filter((p) => p.estado_stock !== "DISPONIBLE") : productos;
+      const urgentes = proyeccion.filter((p) => ["AGOTADO", "ALTA"].includes(p.nivel));
       const alerta = soloBajo && filas.length
         ? h("div", { class: "alerta-caja aviso-amarillo", style: "margin:20px 24px 0" }, icono("alerta"),
           h("div", {}, `${filas.length} producto(s) están en o por debajo de su stock mínimo. Programa su reposición.`))
-        : null;
+        : urgentes.length
+          ? h("div", { class: "alerta-caja aviso-amarillo aviso-proyeccion", style: "margin:20px 24px 0" }, icono("alerta"),
+            h("div", {}, h("strong", {}, urgentes.length === 1 ? `${urgentes[0].nombre} necesita reposición pronto. `
+              : `${urgentes.length} productos necesitan reposición pronto. `),
+              urgentes.length === 1 ? "Según su ritmo de salidas, ya está en su stock mínimo o llegará a él en menos de dos semanas."
+                : "Según su ritmo de salidas, ya están en su stock mínimo o llegarán a él en menos de dos semanas."),
+            h("button", { type: "button", class: "boton boton-chico", onclick: () => { pestana = "proyeccion"; soloBajo = false; recargar(); } }, "Ver proyección"))
+          : null;
       zona.replaceChildren(h("div", { class: "tarjeta" }, alerta, tabla([
         { titulo: "Producto", ordenar: "nombre", render: (p) => h("div", {}, h("div", { class: "fuerte" }, p.nombre), h("div", { class: "secundario mono" }, p.sku)) },
         { titulo: "Ubicación", campo: "ubicacion" },

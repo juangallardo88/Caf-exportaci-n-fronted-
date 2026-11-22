@@ -732,3 +732,111 @@ def test_la_politica_bloquea_estilos_inyectados(pagina_con_csp):
     }""")
     expect(pagina.locator("body")).to_be_visible()
     assert any(v.startswith("style-src") for v in violaciones(pagina))
+
+
+# --- Proyección de agotamiento ------------------------------------------------------
+
+def test_inventario_avisa_y_abre_la_proyeccion(pagina):
+    iniciar_sesion(pagina, *ADMIN)
+    # Una salida de hoy garantiza consumo reciente sin depender de la fecha de los datos de ejemplo.
+    # Café Orgánico Sierra Nevada queda bajo su mínimo (60), así que su proyección es urgente.
+    pagina.evaluate("""async () => {
+        const { api } = await import('./js/api.js');
+        const p = (await api.get('/inventario')).find((x) => x.sku === 'CAF-ORG-35');
+        await api.post('/inventario/movimientos', { producto_id: p.producto_id, tipo: 'SALIDA', cantidad: 5, motivo: 'Muestras para catación' });
+    }""")
+    ir(pagina, "/inventario")
+    aviso = pagina.locator(".aviso-proyeccion")
+    expect(aviso).to_contain_text("reposición pronto")
+    aviso.get_by_role("button", name="Ver proyección").click()
+    expect(pagina.get_by_role("tab", name="Proyección")).to_have_attribute("aria-selected", "true")
+    expect(pagina.locator(".proy-fila").first).to_be_visible()
+    organico = pagina.locator(".proy-fila", has_text="Café Orgánico Sierra Nevada")
+    expect(organico.locator(".proy-chip")).to_have_text("Urgente")
+    expect(organico).to_contain_text("Programa la reposición")
+    expect(organico.get_by_role("img", name=re.compile("Stock de Café Orgánico Sierra Nevada"))).to_be_visible()
+    # Lo más urgente va primero
+    expect(pagina.locator(".proy-fila").first.locator(".proy-chip")).to_have_text(re.compile("Urgente|Agotado"))
+
+
+def test_proyeccion_cambia_la_ventana_de_calculo(pagina):
+    iniciar_sesion(pagina, *AUDITOR)
+    ir(pagina, "/inventario?vista=proyeccion")
+    expect(pagina.locator(".proy-fila").first).to_be_visible()
+    pagina.get_by_role("button", name="180 días").click()
+    expect(pagina.get_by_role("button", name="180 días")).to_have_attribute("aria-pressed", "true")
+    expect(pagina.locator(".proy-fila").first).to_be_visible()
+    expect(pagina.locator(".proy-titular").first).not_to_be_empty()
+
+
+# --- Historial de la exportación -----------------------------------------------------
+
+def test_detalle_muestra_el_historial_completo(pagina):
+    iniciar_sesion(pagina, *AUDITOR)
+    ir(pagina, "/exportaciones/1")
+    historial = pagina.get_by_role("region", name="Historial")
+    expect(historial).to_contain_text("9 cambios")
+    eventos = historial.locator(".evento")
+    expect(eventos).to_have_count(6)  # los 6 más recientes
+    expect(eventos.first).to_contain_text("Marcó la exportación como entregada a Hamburg Kaffee Import GmbH")
+    expect(historial.locator(".ev-confirmada")).to_contain_text("Administrador RiTech")
+    historial.get_by_role("button", name="Ver los 9 cambios").click()
+    expect(eventos).to_have_count(9)
+    expect(eventos.last).to_contain_text("Creó la exportación EXP-2026-0001")
+
+
+def test_un_cambio_hecho_en_pantalla_aparece_en_el_historial(pagina):
+    iniciar_sesion(pagina, *OPERADOR)
+    ir(pagina, "/exportaciones/4")
+    pagina.fill("#campo-impuestos", "120")
+    pagina.fill("#campo-flete", "80.5")
+    pagina.get_by_role("button", name="Actualizar costos").click()
+    ultimo = pagina.get_by_role("region", name="Historial").locator(".evento").first
+    expect(ultimo).to_contain_text("Actualizó los costos: impuestos US$ 120,00 · flete US$ 80,50")
+    expect(ultimo).to_contain_text("Operador Logístico")
+
+
+# --- Código QR de la hoja de embarque ------------------------------------------------
+
+def _matriz_qr(pagina, texto):
+    return pagina.evaluate("""async (texto) => {
+        const { matrizQR } = await import('./js/qr.js');
+        return matrizQR(texto).map((fila) => fila.map((v) => (v ? 1 : 0)));
+    }""", texto)
+
+
+def test_hoja_de_embarque_lleva_qr_al_detalle(pagina):
+    iniciar_sesion(pagina, *ADMIN)
+    ir(pagina, "/exportaciones/1")
+    pagina.evaluate("() => { window.print = () => {}; }")
+    pagina.get_by_role("button", name="Hoja de embarque (PDF)").click()
+    # La hoja está oculta en pantalla (solo se ve al imprimir)
+    expect(pagina.locator(".hoja-qr svg")).to_have_attribute("aria-label", "Código QR para verificar EXP-2026-0001")
+    enlace = pagina.evaluate("async () => (await import('./js/hoja.js')).enlaceVerificacion({ id: 1 })")
+    assert enlace.endswith("/#/exportaciones/1") and enlace.startswith("http://127.0.0.1")
+
+
+def test_qr_tiene_la_estructura_del_estandar(pagina):
+    m = _matriz_qr(pagina, "https://cafe-exportacion-frontend.vercel.app/#/exportaciones/2")
+    n = len(m)
+    assert n == 33  # 62 bytes con corrección M → versión 4 (17 + 4·4 módulos)
+    patron = [[1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 1], [1, 0, 1, 1, 1, 0, 1], [1, 0, 1, 1, 1, 0, 1],
+              [1, 0, 1, 1, 1, 0, 1], [1, 0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1]]
+    for f0, c0 in [(0, 0), (0, n - 7), (n - 7, 0)]:  # tres patrones de posición
+        assert [fila[c0:c0 + 7] for fila in m[f0:f0 + 7]] == patron
+    assert [m[6][i] for i in range(8, n - 8)] == [1 - (i % 2) for i in range(8, n - 8)]  # sincronización
+    assert m[n - 8][8] == 1  # módulo oscuro
+    # La información de formato es la misma en sus dos copias
+    copia1 = [m[i][8] for i in (0, 1, 2, 3, 4, 5, 7)] + [m[8][8], m[8][7]] + [m[8][14 - i] for i in range(9, 15)]
+    copia2 = [m[8][n - 1 - i] for i in range(8)] + [m[n - 15 + i][8] for i in range(8, 15)]
+    assert copia1 == copia2
+
+
+def test_qr_se_puede_leer(pagina):
+    cv2 = pytest.importorskip("cv2")  # opcional: en local se verifica leyéndolo con OpenCV
+    import numpy as np
+    for texto in ["https://cafe-exportacion-frontend.vercel.app/#/exportaciones/2", "Hoja EXP-2026-0001 · café ñ"]:
+        m = np.array(_matriz_qr(pagina, texto), dtype=np.uint8)
+        imagen = cv2.resize((np.pad(1 - m, 4, constant_values=1) * 255).astype(np.uint8), None, fx=8, fy=8,
+                            interpolation=cv2.INTER_NEAREST)
+        assert cv2.QRCodeDetector().detectAndDecode(imagen)[0] == texto

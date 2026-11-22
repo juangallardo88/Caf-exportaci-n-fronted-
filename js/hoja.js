@@ -2,10 +2,14 @@
 // Se arma aparte del resto de la app y se imprime con el diálogo del navegador, que permite «Guardar como PDF».
 import { DESTINOS } from "./mapa.js";
 import { INCOTERMS } from "./glosario.js";
+import { svgQR } from "./qr.js";
 import { usuario } from "./sesion.js";
 import { ESTADOS_EXPORTACION, fecha, h, moneda, numero } from "./ui.js";
 
 const MODOS = { MARITIMO: "Marítimo", AEREO: "Aéreo", TERRESTRE: "Terrestre", MULTIMODAL: "Multimodal" };
+
+/** Enlace al detalle en la app: quien escanea el QR (con sesión) ve el estado real de la exportación. */
+export const enlaceVerificacion = (e) => `${location.origin}${location.pathname.replace(/index\.html$/, "")}#/exportaciones/${e.id}`;
 
 const dato = (etiqueta, valor, clase = "") =>
   h("div", { class: "hoja-dato" }, h("dt", {}, etiqueta), h("dd", { class: clase }, valor ?? "—"));
@@ -28,7 +32,10 @@ export function hojaEmbarque(e, ahora = new Date()) {
       h("div", { class: "hoja-folio" },
         h("div", { class: "hoja-tipo" }, "Hoja de embarque"),
         h("div", { class: "hoja-consecutivo" }, e.consecutivo),
-        h("div", { class: "hoja-estado" }, `Estado: ${ESTADOS_EXPORTACION[e.estado]?.[0] || e.estado}`))),
+        h("div", { class: "hoja-estado" }, `Estado: ${ESTADOS_EXPORTACION[e.estado]?.[0] || e.estado}`)),
+      h("figure", { class: "hoja-qr" },
+        svgQR(enlaceVerificacion(e), { tam: 92, titulo: `Código QR para verificar ${e.consecutivo}` }),
+        h("figcaption", {}, "Escanea para verificar"))),
 
     h("div", { class: "hoja-columnas" },
       bloque("Partes", h("dl", {},

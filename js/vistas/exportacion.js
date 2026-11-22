@@ -1,6 +1,7 @@
 // HU-18 (productos), HU-20 (detalle), HU-21 (estado), HU-22 (fechas) y HU-23 (transporte).
 import { api } from "../api.js";
 import { ESTADOS_EXPLICADOS, INCOTERMS, TERMINOS } from "../glosario.js";
+import { historialExportacion } from "../historial.js";
 import { imprimirHoja } from "../hoja.js";
 import { icono } from "../iconos.js";
 import { puedeEditar } from "../sesion.js";
@@ -86,7 +87,9 @@ function seguimiento(e, hoy = new Date()) {
 }
 
 export async function vistaExportacion({ id, recargar }) {
-  const [e, productos] = await Promise.all([api.get(`/exportaciones/${id}`), api.get("/productos")]);
+  const [e, productos, eventos] = await Promise.all([api.get(`/exportaciones/${id}`), api.get("/productos"),
+    // Si el historial no responde, el detalle se muestra igual
+    api.get(`/exportaciones/${id}/historial`).catch(() => null)]);
   const editable = puedeEditar() && !["ENTREGADA", "CANCELADA"].includes(e.estado);
   const borrador = puedeEditar() && e.estado === "BORRADOR";
 
@@ -215,5 +218,7 @@ export async function vistaExportacion({ id, recargar }) {
           h("div", { class: "tarjeta-titulo" }, h("h2", {}, "Productos"), h("span", {}, e.productos.length === 1 ? "1 referencia" : `${e.productos.length} referencias`)),
           h("div", { style: "margin-top:12px" }, tablaProductos), formProducto),
         h("div", { class: "rejilla rejilla-2" }, tarjeta("Fechas", fechas), tarjeta("Transporte", transporte))),
-      tarjeta("Totales", totales, formCostos ? h("div", { style: "margin-top:20px" }, formCostos) : null)));
+      h("div", { class: "rejilla" },
+        tarjeta("Totales", totales, formCostos ? h("div", { style: "margin-top:20px" }, formCostos) : null),
+        eventos ? historialExportacion(eventos, e) : null)));
 }
